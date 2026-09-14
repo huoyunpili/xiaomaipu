@@ -37,6 +37,7 @@ class AuditEvent(BaseModel):
             "xgj.order_linked": "关联平台订单",
             "xgj.reviewed": "核对平台变化",
             "xgj.refund_checked": "查询平台售后事实",
+            "account.updated": "修改自己的账号",
         }.get(self.action, "业务操作")
 
     class Meta:

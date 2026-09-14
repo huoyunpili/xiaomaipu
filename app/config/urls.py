@@ -1,7 +1,7 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
-from app.accounts.views import ThrottledLoginView
+from app.accounts.views import ThrottledLoginView, account_settings, first_owner_setup
 from app.catalog import views as catalog_views
 from app.common import views
 from app.contacts import views as contact_views
@@ -154,6 +154,8 @@ urlpatterns = [
         ThrottledLoginView.as_view(),
         name="login",
     ),
+    path("setup/", first_owner_setup, name="first-owner-setup"),
+    path("account/", account_settings, name="account-settings"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("settings/shop/", settings_view, name="shop-settings"),
     path("audit/", views.audit_list, name="audit-list"),

@@ -240,7 +240,6 @@ function Start-App([switch]$Initialize) {
     Assert-Port
     Compose up --detach --wait postgres redis
     Migrate
-    if ($Initialize -and -not $SkipAdmin) { Compose run --rm web python manage.py init_local_admin }
     Compose up --detach static web worker beat caddy
     Wait-Ready
     if (Backup-Due) {
