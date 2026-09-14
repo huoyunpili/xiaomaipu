@@ -1,0 +1,24 @@
+{% extends 'base.html' %}{% block content %}
+<h1>闲管家订单同步</h1>
+<p>平台订单先进入待核对列表，关联本地商品后创建销售草稿。实际库存、收款和售后按经营流程核对。</p>
+{% if user.is_shop_admin %}<form method="post" action="{% url 'xgj-operate' 'connect' %}">{% csrf_token %}<button>验证授权店铺</button></form>{% endif %}
+{% if connection %}
+<p>最近完整同步：{{ connection.last_success|default:'尚未完成' }} · 自动同步：{{ connection.enabled|yesno:'已开启,已关闭' }}</p>
+{% if valid_until %}<p>平台授权有效期：{{ valid_until }}{% if connection.service_info.is_trial %}（试用）{% endif %}</p>{% endif %}
+{% if connection.error %}<p class="notice">{{ connection.error }}</p>{% endif %}
+{% if user.is_shop_admin %}<div class="actions">
+<form method="post" action="{% url 'xgj-operate' 'sync' %}">{% csrf_token %}<button>立即同步</button></form>
+<form method="post" action="{% url 'xgj-operate' 'rescan' %}">{% csrf_token %}<button>重新核对全部可查订单</button></form>
+<form method="post" action="{% url 'xgj-operate' 'enable' %}">{% csrf_token %}<button>开启每 5 分钟同步</button></form>
+<form method="post" action="{% url 'xgj-operate' 'disable' %}">{% csrf_token %}<button class="quiet">关闭自动同步</button></form>
+</div>{% endif %}
+{% endif %}
+<p><a href="?pending=1">只看待核对</a> · <a href="{% url 'xgj-home' %}">全部平台订单</a> · <a href="{% url 'import-home' %}">使用表格导入</a></p>
+<div class="table-wrap"><table><thead><tr><th>平台订单号</th><th>商品</th><th>核对状态</th></tr></thead><tbody>
+{% for row in rows %}<tr><td><a href="{% url 'xgj-detail' row.pk %}">{{ row.external_order_no }}</a></td><td>{{ row.snapshot.goods.title }}</td><td>{{ row.needs_review|yesno:'待核对,已核对' }}{% if row.order %} · 已关联{% endif %}</td></tr>{% empty %}<tr><td colspan="3">尚无同步订单。验证店铺后点击立即同步。</td></tr>{% endfor %}
+</tbody></table></div>
+{% if rows.has_previous %}<a href="?page={{ rows.previous_page_number }}{% if request.GET.pending %}&pending=1{% endif %}">上一页</a>{% endif %} 第 {{ rows.number }} 页 {% if rows.has_next %}<a href="?page={{ rows.next_page_number }}{% if request.GET.pending %}&pending=1{% endif %}">下一页</a>{% endif %}
+<h2>最近同步记录</h2>{% for run in runs %}<p>{{ run.created_at }} · {{ run.status_label }} · {{ run.count }} 条 · {{ run.error }}</p>{% empty %}<p>暂无任务</p>{% endfor %}
+{% if failed_notices %}<p class="notice">有 {{ failed_notices }} 条推送未能读取详情。</p>{% if user.is_shop_admin %}<form method="post" action="{% url 'xgj-operate' 'retry-notices' %}">{% csrf_token %}<button>重试失败通知</button></form>{% endif %}{% endif %}
+<p>列表最多覆盖平台允许查询的 10000 条记录；授权前历史订单仍需核对覆盖范围。公网推送需部署后配置回调地址。</p>
+{% endblock %}

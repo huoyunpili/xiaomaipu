@@ -1,0 +1,29 @@
+name: quality
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_DB: seller
+          POSTGRES_USER: seller
+          POSTGRES_PASSWORD: seller-ci-only
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U seller -d seller"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      POSTGRES_PASSWORD: seller-ci-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.10"
+          python-version: "3.13"
+      - run: uv sync --frozen
+      - run: uv run playwright install --with-deps chromium
+      - run: uv run python manage.py migrate --noinput
+      - run: uv run python manage.py bootstrap
+      - run: uv run python scripts/check.py

@@ -1,0 +1,65 @@
+services:
+  postgres:
+    ports: !reset []
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+  redis:
+    ports: !reset []
+  web:
+    image: ${APP_IMAGE:-xianyu-seller:0.4.0}
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    environment: &app_environment
+      DJANGO_SETTINGS_MODULE: app.config.settings.production
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?Set DJANGO_ALLOWED_HOSTS}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-seller}
+      POSTGRES_USER: ${POSTGRES_USER:-seller}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      REDIS_URL: redis://redis:6379/0
+      PRIVATE_MEDIA_ROOT: /srv/private-media
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      XGJ_APP_KEY: ${XGJ_APP_KEY:-}
+      XGJ_APP_SECRET: ${XGJ_APP_SECRET:-}
+    volumes:
+      - private_media:/srv/private-media
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+    mem_limit: 768m
+  worker:
+    image: ${APP_IMAGE:-xianyu-seller:0.4.0}
+    command: ["celery", "-A", "app.config.celery", "worker", "--loglevel=INFO"]
+    environment: *app_environment
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+    mem_limit: 768m
+  beat:
+    image: ${APP_IMAGE:-xianyu-seller:0.4.0}
+    command: ["celery", "-A", "app.config.celery", "beat", "--schedule=/tmp/celerybeat", "--loglevel=INFO"]
+    environment: *app_environment
+    depends_on:
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+    mem_limit: 256m
+  caddy:
+    image: caddy:2.10.2-alpine
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?Set SITE_DOMAIN}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../staticfiles:/srv/static:ro
+      - caddy_data:/data
+    depends_on: [web]
+    restart: unless-stopped
+volumes:
+  caddy_data:
+  private_media:

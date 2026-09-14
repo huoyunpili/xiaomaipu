@@ -1,0 +1,15 @@
+.venv
+.git
+.env*
+.docx*
+scripts
+tests
+*.md
+*.docx
+**/__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+artifacts
+.local
+.uv-cache

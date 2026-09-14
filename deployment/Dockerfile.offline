@@ -1,0 +1,12 @@
+# Reuse a locally verified runtime when public wheel downloads are slow.
+# uv --offline fails if the baseline cannot satisfy the current locked dependencies.
+ARG BASE_IMAGE=xianyu-seller:0.3.0
+FROM ${BASE_IMAGE}
+USER root
+WORKDIR /srv/app
+COPY pyproject.toml uv.lock ./
+COPY app ./app
+COPY manage.py ./
+RUN uv sync --frozen --offline --no-dev
+RUN DJANGO_SETTINGS_MODULE=app.config.settings.development python manage.py collectstatic --clear --noinput
+USER seller

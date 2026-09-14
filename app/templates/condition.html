@@ -1,0 +1,5 @@
+<div class="condition"><p class="description">{{ condition.condition_description|default:'货况未记录'|linebreaksbr }}</p>
+<p><strong class="pill">成色：{{ condition.condition_label|default:'未记录' }}</strong></p>{% if condition.condition_tags %}<span class="pill">{{ condition.condition_tags }}</span>{% endif %}
+{% if condition.accessories_description %}<p>配件：{{ condition.accessories_description|linebreaksbr }}</p>{% endif %}
+{% if condition.defect_description %}<p>瑕疵：{{ condition.defect_description|linebreaksbr }}</p>{% endif %}
+{% if condition.function_description %}<p>功能：{{ condition.function_description|linebreaksbr }}</p>{% endif %}</div>

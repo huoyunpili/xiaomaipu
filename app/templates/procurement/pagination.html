@@ -1,0 +1,1 @@
+{% if page.has_other_pages %}<div class="actions pagination">{% if page.has_previous %}<a href="?q={{ q|urlencode }}&amp;page={{ page.previous_page_number }}">上一页</a>{% endif %}<span>{{ page.number }} / {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a href="?q={{ q|urlencode }}&amp;page={{ page.next_page_number }}">下一页</a>{% endif %}</div>{% endif %}

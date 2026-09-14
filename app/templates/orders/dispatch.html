@@ -1,0 +1,3 @@
+{% extends 'base.html' %}{% block content %}<a class="back" href="{{ back_url }}">← 返回订单</a><h1>{{ title }}</h1><p>{{ intro }}</p>
+<section class="card"><h2>已备货实物（发货顺序）</h2>{% for allocation in allocations %}<article class="event"><h3>{{ allocation.lot.label|default:'未命名实物组' }} · {{ allocation.quantity }} 件</h3>{% include 'condition.html' with condition=allocation.condition_snapshot %}</article>{% empty %}<p>当前没有已锁定的实物，请先备货。</p>{% endfor %}</section>
+<section class="card form-card section-title"><form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">{{ button }}</button></form></section>{% endblock %}

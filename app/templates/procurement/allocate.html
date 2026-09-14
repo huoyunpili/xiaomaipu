@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% load money %}{% block content %}
+<a class="back" href="{{ back_url }}">← 返回采购</a><h1>{{ title }}</h1><p>{{ intro }}</p>
+<div class="grid"><section class="card"><h2>开单时的货况</h2>{% include 'condition.html' with condition=item.condition_snapshot %}</section><section class="card"><h2>本次到货的实际货况</h2>{% include 'condition.html' with condition=lot %}<p>可售 {{ lot.available_qty }} 件 · 单件进货成本 ¥{{ lot.purchase_cost_fen|yuan }}</p></section></div>
+<section class="card form-card section-title"><form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">{{ button }}</button></form></section>{% endblock %}

@@ -1,0 +1,28 @@
+# Local secrets
+.env
+.env.*
+!.env.example
+*.secret
+
+# Probe output may contain business metadata
+scripts/xgj_probe/output/
+scripts/xgj_probe/vendor_tmp/
+scripts/xgj_probe/*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.uv-cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+staticfiles/
+artifacts/
+*.sqlite3
+.local/
+
+# Local document working copies and render previews
+.docx_work/
+.docx_qa/
+*.docx
