@@ -14,7 +14,7 @@ def test_reconciles_partial_purchase_without_writes(admin_user, django_assert_nu
     operate(admin_user, purchase, "pay", amount_fen=1000)
     operate(admin_user, purchase, "receive", quantity=1)
     before = list(Purchase.objects.values())
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(8):
         report = reconcile_current_data()
     assert report["differences"] == []
     assert report["totals"]["purchase_paid_fen"] == 1000

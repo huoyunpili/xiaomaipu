@@ -87,6 +87,23 @@ class CancelRemainingForm(OrderActionForm):
 
 
 class MoneyForm(OrderActionForm):
+    occurred_at = forms.DateTimeField(
+        label="实际收支时间（不清楚可留空）",
+        required=False,
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
+    )
+    account_type = forms.ChoiceField(
+        label="实际收支账户",
+        choices=[
+            ("UNKNOWN", "未记录"),
+            ("BANK", "银行卡"),
+            ("ALIPAY", "支付宝"),
+            ("WECHAT", "微信"),
+            ("CASH", "现金"),
+        ],
+        required=False,
+    )
+
     amount = money_field("实际发生金额（元）")
     reason = forms.CharField(label="到账依据/原因", max_length=300)
 
@@ -117,3 +134,19 @@ class InspectionForm(ConditionForm):
         "function_description",
         "internal_notes",
     ]
+
+
+class CustomerPaymentForm(OrderActionForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields.pop("reason")
+
+    amount = money_field("客户向平台付款金额（元）")
+    source_ref = forms.CharField(label="付款凭据编号", max_length=200)
+    evidence = forms.CharField(label="核对依据", max_length=300)
+    platform_status = forms.CharField(label="平台付款状态备注", max_length=100, required=False)
+    occurred_at = forms.DateTimeField(
+        label="实际付款时间（不清楚可留空）",
+        required=False,
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
+    )

@@ -10,11 +10,12 @@ from app.catalog.models import SKU
 from app.common.form_views import business_form
 from app.common.forms import to_fen
 from app.evidence.models import EvidenceVideo
-from app.finance.services import record_money
+from app.finance.services import record_customer_payment, record_money
 from app.inventory.models import StockLot
 
 from .forms import (
     CancelRemainingForm,
+    CustomerPaymentForm,
     DispatchForm,
     InspectionForm,
     MoneyForm,
@@ -76,6 +77,7 @@ def order_detail(request, order_id):
             ),
             "events": order.events.all()[:50],
             "entries": order.money_entries.all()[:50],
+            "customer_payments": order.customer_payments.order_by("-created_at")[:50],
         },
     )
 
@@ -275,4 +277,27 @@ def return_inspect(request, return_id):
         ),
         destination=lambda result: reverse("order-detail", args=[result["order_id"]]),
         back_url=reverse("order-detail", args=[receipt.reservation.item.order_id]),
+    )
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def customer_payment_record(request, order_id):
+    order = get_object_or_404(SalesOrder, pk=order_id)
+    form = CustomerPaymentForm(
+        request.POST if request.method == "POST" else None, initial={"version": order.version}
+    )
+
+    def save(data):
+        data["amount_fen"] = to_fen(data.pop("amount"))
+        return record_customer_payment(actor=request.user, order_id=order.pk, **data)
+
+    return business_form(
+        request,
+        form=form,
+        title="登记平台付款依据",
+        intro="记录客户已向闲鱼平台付款的凭据，不增加卖家实际到账，不触发发货。相同付款请使用相同凭据编号。",
+        save=save,
+        destination=lambda result: reverse("order-detail", args=[order.pk]),
+        back_url=reverse("order-detail", args=[order.pk]),
     )

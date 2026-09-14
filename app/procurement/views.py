@@ -187,6 +187,7 @@ def purchase_detail(request, purchase_id):
             "purchase": purchase,
             "receipts": purchase.receipts.select_related("lot"),
             "events": purchase.events.all()[:100],
+            "cash_entries": purchase.money_entries.all()[:100],
             "dispatches": purchase.dispatches.prefetch_related("dispositions"),
             "arrivals": purchase.arrivals.prefetch_related("inspections"),
         },

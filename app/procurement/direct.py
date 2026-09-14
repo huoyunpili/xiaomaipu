@@ -114,7 +114,12 @@ def dispatch_direct(
             else "SHIPPED"
         )
         MoneyEntry.objects.create(
-            order=order, kind="FEE", amount_fen=fee_fen, reason="供应商直发实际履约费用"
+            order=order,
+            actor=actor,
+            direction="OUT",
+            kind="FEE",
+            amount_fen=fee_fen,
+            reason="供应商直发实际履约费用",
         )
         PurchaseEvent.objects.create(
             purchase=purchase, kind="direct", quantity=quantity, reason="供应商已直接发给买家"

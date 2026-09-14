@@ -11,7 +11,6 @@ from app.procurement.models import (
     Purchase,
     PurchaseArrival,
     PurchaseDispatch,
-    PurchaseEvent,
     PurchaseReceipt,
 )
 
@@ -39,8 +38,12 @@ def reconcile_current_data():
             )
 
     money: Counter[tuple[UUID, str]] = Counter()
-    for row in MoneyEntry.objects.values("order_id", "kind", "amount_fen"):
-        money[row["order_id"], row["kind"]] += row["amount_fen"]
+    payments: Counter[tuple[UUID, str]] = Counter()
+    for row in MoneyEntry.objects.values("order_id", "purchase_id", "kind", "amount_fen"):
+        if row["order_id"]:
+            money[row["order_id"], row["kind"]] += row["amount_fen"]
+        else:
+            payments[row["purchase_id"], row["kind"]] += row["amount_fen"]
     orders = list(SalesOrder.objects.values("id", "received_fen", "refunded_fen"))
     for row in orders:
         compare(
@@ -48,9 +51,6 @@ def reconcile_current_data():
         )
         compare("order", row["id"], "refunded_fen", row["refunded_fen"], money[row["id"], "REFUND"])
 
-    payments: Counter[tuple[UUID, str]] = Counter()
-    for row in PurchaseEvent.objects.values("purchase_id", "kind", "amount_fen"):
-        payments[row["purchase_id"], row["kind"]] += row["amount_fen"]
     receipts: Counter[tuple[UUID, str]] = Counter()
     for row in PurchaseReceipt.objects.values("purchase_id", "quantity", "returned_qty"):
         receipts[row["purchase_id"], "received_qty"] += row["quantity"]
@@ -69,7 +69,7 @@ def reconcile_current_data():
         )
     )
     for row in purchases:
-        for field, kind in (("paid_fen", "pay"), ("refunded_fen", "refund")):
+        for field, kind in (("paid_fen", "PAYMENT"), ("refunded_fen", "REFUND")):
             compare("purchase", row["id"], field, row[field], payments[row["id"], kind])
         for field in ("received_qty", "returned_qty"):
             compare("purchase", row["id"], field, row[field], receipts[row["id"], field])

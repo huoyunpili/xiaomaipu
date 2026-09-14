@@ -116,6 +116,11 @@ urlpatterns = [
         order_views.order_operate,
         name="order-operate",
     ),
+    path(
+        "orders/<uuid:order_id>/customer-payment/",
+        order_views.customer_payment_record,
+        name="customer-payment-record",
+    ),
     path("orders/<uuid:order_id>/money/<str:kind>/", order_views.money_record, name="money-record"),
     path(
         "returns/receive/<uuid:reservation_id>/", order_views.return_receive, name="return-receive"

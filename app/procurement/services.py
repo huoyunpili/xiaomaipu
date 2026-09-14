@@ -2,6 +2,7 @@ from app.accounts.policies import require_operator
 from app.catalog.models import CONDITION_FIELDS, SKU
 from app.common.business import BusinessError, record_event, whole
 from app.common.services import execute_once
+from app.finance.models import MoneyEntry
 from app.inventory.models import InventoryBalance, StockLot
 from app.inventory.services import move_stock
 from app.orders.models import OrderItem, SalesOrder
@@ -262,6 +263,16 @@ def purchase_action(
         )
         event.full_clean()
         event.save()
+        if operation in {"pay", "refund"}:
+            MoneyEntry.objects.create(
+                purchase=purchase,
+                purchase_event=event,
+                actor=actor,
+                kind="PAYMENT" if operation == "pay" else "REFUND",
+                direction="OUT" if operation == "pay" else "IN",
+                amount_fen=amount_fen,
+                reason=reason,
+            )
         record_event(
             actor,
             "purchase." + operation,
