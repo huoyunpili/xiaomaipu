@@ -8,10 +8,11 @@ from django.views.decorators.http import require_GET
 from app.accounts.policies import require_admin
 from app.audit.models import AuditEvent
 from app.catalog.models import SKU
+from app.common.dashboard import financial_summary, goods_summary
 from app.contacts.models import Customer
 from app.importing.models import ImportJob
 from app.integrations.models import Connection, PlatformOrder
-from app.operations.projections import bottlenecks
+from app.operations.projections import bottlenecks, grouped_bottlenecks
 from app.orders.models import ReturnReceipt, SalesOrder
 from app.procurement.models import Purchase
 from app.shops.models import SalesChannel, Shop
@@ -44,6 +45,8 @@ def dashboard(request):
         "dashboard.html",
         {
             "shop": Shop.objects.filter(is_active=True).first(),
+            "financials": financial_summary(),
+            "goods": goods_summary(),
             "channel_count": SalesChannel.objects.filter(is_active=True).count(),
             "sku_count": SKU.objects.filter(is_active=True).count(),
             "pending_returns": ReturnReceipt.objects.filter(status="INSPECTION").select_related(
@@ -73,7 +76,7 @@ def dashboard(request):
                 )
             )[:6],
             "bottleneck_count": len(active_bottlenecks),
-            "bottleneck_preview": active_bottlenecks[:6],
+            "bottleneck_groups": grouped_bottlenecks(active_bottlenecks, limit=2),
             "local_release": local_release_status(),
         },
     )

@@ -1,6 +1,48 @@
 {% extends 'base.html' %}{% load money %}{% block content %}
-<p class="eyebrow">工作台</p><h1>{{ shop.name|default:'我的小卖铺' }}</h1><p class="muted">{{ user.display_name|default:user.username }}，欢迎回来。</p>
-<section class="card"><h2><a href="{% url 'bottleneck-list' %}">钱货卡点</a></h2><p><strong>{{ bottleneck_count }}</strong> 个当前可准确识别的卡点；缺少售后结构时明确显示未知。</p>{% for card in bottleneck_preview %}<p><a href="{{ card.url }}">{{ card.kind }} · {{ card.title }}</a> · {{ card.detail }}</p>{% empty %}<p>当前没有可准确识别的卡点。</p>{% endfor %}</section>
-{% if local_release %}<section class="card"><h2>本地运行与备份</h2><p>版本：{{ local_release.version }} · 最近备份：{{ local_release.last_backup_at|default:'尚无成功记录' }} · 独立恢复校验：{{ local_release.last_backup_verified|yesno:'通过,未通过' }}</p>{% if local_release.backup_error %}<p class="notice">{{ local_release.backup_error }}</p>{% endif %}<p class="muted">关闭浏览器不会停止后台。启动、停止、状态、备份、恢复和升级请使用本地管理脚本。</p></section>{% endif %}
-<div class="grid"><section class="card"><h2>货盘与库存</h2><p>已建立 {{ sku_count }} 个商品，可分别记录每件货的实际情况。</p><div class="actions"><a class="button" href="{% url 'product-new' %}">新增商品</a><a href="{% url 'product-list' %}">查看货盘</a></div></section><section class="card"><h2>手工订单</h2><p>{{ channel_count }} 个销售渠道共用库存，收款与交付分别记录。</p><a class="button" href="{% url 'order-list' %}">查看订单</a></section></div>
-<h2 class="section-title">待处理订单</h2><section class="card">{% for order in open_orders %}<article class="event"><strong><a href="{% url 'order-detail' order.id %}">{{ order.customer_name }} · {{ order.get_status_display }}</a></strong><p>{{ order.channel.name }} · {{ order.payment_label }} · 待收 ¥{{ order.outstanding_fen|yuan }}</p></article>{% empty %}<p class="muted">暂无待交付、待确认完成或待收款订单。</p>{% endfor %}</section>{% include 'dashboard_todos.html' %}{% endblock %}
+<div class="page-heading"><div><p class="eyebrow">经营总览</p><h1>{{ shop.name|default:'我的小卖铺' }}</h1><p class="muted">{{ user.display_name|default:user.username }}，这里先看钱在哪里、货在哪里，再处理卡住的业务。</p></div></div>
+
+<section class="flow-section">
+  <div class="section-heading"><div><p class="eyebrow">钱从客户流入，再向供应商流出</p><h2>钱款总览</h2></div><a href="{% url 'reports' %}">查看经营报表 →</a></div>
+  <div class="metrics dashboard-metrics">
+    <section class="card metric-card money"><span>累计实际净收</span><strong>¥{{ financials.cash_received_fen|yuan }}</strong><small>已经进入本店账户</small></section>
+    <section class="card metric-card money"><span>客户平台付款凭据</span><strong>¥{{ financials.customer_payment_fen|yuan }}</strong><small>客户已付，不等同现金到账</small></section>
+    <section class="card metric-card pending"><span>平台订单待核对金额</span><strong>¥{{ financials.platform_pending_fen|yuan }}</strong><small>外部订单实付快照，尚未进入经营账</small></section>
+    <section class="card metric-card attention"><span>当前仍待收</span><strong>¥{{ financials.receivable_fen|yuan }}</strong><small>按订单应收与实际净收计算</small></section>
+    <section class="card metric-card money"><span>累计已付供应商</span><strong>¥{{ financials.supplier_paid_fen|yuan }}</strong><small>采购实际付款扣除退款</small></section>
+    <section class="card metric-card attention"><span>当前仍欠供应商</span><strong>¥{{ financials.supplier_payable_fen|yuan }}</strong><small>已采购但尚未付清</small></section>
+    <section class="card metric-card attention"><span>待供应商退款</span><strong>¥{{ financials.supplier_refund_fen|yuan }}</strong><small>退供或关闭后尚未收回</small></section>
+    <section class="card metric-card money"><span>累计已实现利润</span><strong>¥{{ financials.realized_profit_fen|yuan }}</strong><small>仅含履约及收款均完成的订单</small></section>
+  </div>
+</section>
+
+<section class="flow-section">
+  <div class="section-heading"><div><p class="eyebrow">货从供应商流入，再向客户流出</p><h2>货物总览</h2></div><a href="{% url 'product-list' %}">查看库存明细 →</a></div>
+  <div class="metrics dashboard-metrics">
+    <section class="card metric-card goods"><span>现货在库</span><strong>{{ goods.on_hand_qty }} 件</strong><small>含已锁给订单的库存</small></section>
+    <section class="card metric-card goods"><span>当前可售</span><strong>{{ goods.available_qty }} 件</strong><small>可以继续销售</small></section>
+    <section class="card metric-card attention"><span>已锁待发</span><strong>{{ goods.reserved_qty }} 件</strong><small>已经分给销售订单</small></section>
+    <section class="card metric-card attention"><span>销售仍待发</span><strong>{{ goods.pending_customer_qty }} 件</strong><small>已确认订单尚未交付</small></section>
+    <section class="card metric-card pending"><span>平台订单待核对商品</span><strong>{{ goods.platform_pending_qty }} 件</strong><small>核对商品与货况后才进入销售和库存流程</small></section>
+    <section class="card metric-card goods"><span>供应商运输中</span><strong>{{ goods.in_transit_qty }} 件</strong><small>已经发出，尚未收妥</small></section>
+    <section class="card metric-card attention"><span>到货待验</span><strong>{{ goods.inspection_qty }} 件</strong><small>到货后尚未完成验收</small></section>
+    <section class="card metric-card goods"><span>库存成本占用</span><strong>¥{{ goods.stock_cost_fen|yuan }}</strong><small>按现有实物组采购成本计算</small></section>
+  </div>
+</section>
+
+<section class="flow-section">
+  <div class="section-heading"><div><p class="eyebrow">钱和货没有同时到位的地方</p><h2>钱货卡点</h2></div><a href="{% url 'bottleneck-list' %}">查看全部 {{ bottleneck_count }} 个卡点 →</a></div>
+  <div class="bottleneck-summary-grid">
+  {% for group in bottleneck_groups %}<section class="card bottleneck-summary">
+    <div class="page-heading"><p class="eyebrow">{{ group.key }}</p><span class="count-badge">{% if group.unavailable %}待补能力{% else %}{{ group.count }} 个{% endif %}</span></div>
+    <h3><a href="{% url 'bottleneck-list' %}?kind={{ group.key }}">{{ group.label }}</a></h3><p class="muted">{{ group.description }}</p>
+    {% if group.count %}<p class="bottleneck-totals">{% if group.has_quantity %}涉及 {{ group.total_quantity }} 件{% endif %}{% if group.has_quantity and group.has_amount %} · {% endif %}{% if group.has_amount %}{{ group.amount_label }} ¥{{ group.total_amount_fen|yuan }}{% endif %}</p>{% endif %}
+    {% for card in group.cards %}<article class="event compact"><a href="{{ card.url }}">{{ card.title }}</a><p>{{ card.detail }}</p></article>{% empty %}{% if group.unavailable %}<p class="warning">售后单、退款来源和退货责任尚未完整结构化，目前保持未知。</p>{% else %}<p class="muted">当前没有这一类卡点。</p>{% endif %}{% endfor %}
+    <a href="{% url 'bottleneck-list' %}?kind={{ group.key }}">查看这一类 →</a>
+  </section>{% endfor %}
+  </div>
+</section>
+
+<h2 class="section-title">当前销售订单</h2><section class="card">{% for order in open_orders %}<article class="event"><strong><a href="{% url 'order-detail' order.id %}">{{ order.customer_name }} · {{ order.get_status_display }}</a></strong><p>{{ order.channel.name }} · {{ order.payment_label }} · 待收 ¥{{ order.outstanding_fen|yuan }}</p></article>{% empty %}<p class="muted">暂无待交付、待确认完成或待收款订单。</p>{% endfor %}</section>
+{% include 'dashboard_todos.html' %}
+{% if local_release %}<section class="card section-title"><h2>本地运行与备份</h2><p>版本：{{ local_release.version }} · 最近备份：{{ local_release.last_backup_at|default:'尚无成功记录' }} · 独立恢复校验：{{ local_release.last_backup_verified|yesno:'通过,未通过' }}</p>{% if local_release.backup_error %}<p class="notice">{{ local_release.backup_error }}</p>{% endif %}<p class="muted">关闭浏览器不会停止后台。启动、停止、状态、备份、恢复和升级请使用本地管理脚本。</p></section>{% endif %}
+{% endblock %}

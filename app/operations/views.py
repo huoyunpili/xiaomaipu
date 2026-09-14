@@ -12,7 +12,13 @@ from app.procurement.models import Purchase
 
 from .forms import FollowUpForm, ListingMappingForm, SupplyAllocationForm, ThresholdForm
 from .models import BottleneckThreshold, FollowUp
-from .projections import DEFAULT_THRESHOLDS, KIND_LABELS, bottlenecks, supplemental_issues
+from .projections import (
+    DEFAULT_THRESHOLDS,
+    KIND_LABELS,
+    bottlenecks,
+    grouped_bottlenecks,
+    supplemental_issues,
+)
 from .services import (
     allocate_supply,
     save_listing_mapping,
@@ -30,6 +36,13 @@ def bottleneck_list(request):
         kind = ""
     all_cards = sync_followups(bottlenecks(), timezone.now())
     cards = [card for card in all_cards if not kind or card["kind"] == kind]
+    page = None
+    if kind:
+        page = Paginator(cards, 30).get_page(request.GET.get("page"))
+        groups = grouped_bottlenecks(cards, kinds=[kind])
+        groups[0]["cards"] = list(page)
+    else:
+        groups = grouped_bottlenecks(all_cards, limit=5)
     counts = {key: 0 for key in KIND_LABELS}
     for card in all_cards:
         counts[card["kind"]] += 1
@@ -37,9 +50,15 @@ def bottleneck_list(request):
         request,
         "operations/bottlenecks.html",
         {
-            "cards": Paginator(cards, 30).get_page(request.GET.get("page")),
+            "cards": page,
+            "bottleneck_groups": groups,
             "kind_summaries": [
-                {"key": key, "label": label, "count": counts[key]}
+                {
+                    "key": key,
+                    "label": label,
+                    "count": counts[key],
+                    "unavailable": key == "K6",
+                }
                 for key, label in KIND_LABELS.items()
             ],
             "selected_kind": kind,

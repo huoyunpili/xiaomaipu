@@ -41,7 +41,8 @@ class TestIntegrationBrowser(StaticLiveServerTestCase):
             page.get_by_label("用户名").fill("api-owner")
             page.get_by_label("密码").fill("api-test-only")
             page.get_by_role("button", name="登录", exact=True).click()
-            page.get_by_role("link", name="平台同步", exact=True).click()
+            page.get_by_text("数据接入", exact=True).click()
+            page.get_by_role("link", name="平台订单同步", exact=True).click()
             expect(page.get_by_role("heading", name="闲管家订单同步")).to_be_visible()
             page.get_by_label("首次接入日期（北京时间）").fill(
                 datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()

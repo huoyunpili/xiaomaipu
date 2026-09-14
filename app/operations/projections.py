@@ -18,6 +18,24 @@ KIND_LABELS = {
     "K6": "售后钱货不同步",
     "K7": "货已收到，仍欠供应商",
 }
+KIND_DESCRIPTIONS = {
+    "K1": "钱已经付给供应商，但供应商还有货没发出。",
+    "K2": "货已经在运输中，并且超过了预计到货时间。",
+    "K3": "货留在仓库超过设定天数，仍未卖出。",
+    "K4": "客户已有付款凭据，但本店还有货没发出。",
+    "K5": "货已经完成交付，但实际现金仍未结清。",
+    "K6": "退款和退货没有在同一时间完成，需要分别追踪。",
+    "K7": "货已经收到，但仍有供应商货款没有付清。",
+}
+KIND_AMOUNT_LABELS = {
+    "K1": "已付供应商",
+    "K2": "",
+    "K3": "库存成本占用",
+    "K4": "客户付款凭据",
+    "K5": "仍待收回",
+    "K6": "",
+    "K7": "仍欠供应商",
+}
 DEFAULT_THRESHOLDS = {"K1": 0, "K2": 0, "K3": 90, "K4": 0, "K5": 0, "K7": 0}
 
 
@@ -292,3 +310,28 @@ def supplemental_issues(as_of=None):
         ).count(),
         "as_of": as_of,
     }
+
+
+def grouped_bottlenecks(cards, *, limit=None, kinds=None):
+    cards = list(cards)
+    keys = kinds or list(KIND_LABELS)
+    groups = []
+    for key in keys:
+        matching = [card for card in cards if card["kind"] == key]
+        groups.append(
+            {
+                "key": key,
+                "label": KIND_LABELS[key],
+                "description": KIND_DESCRIPTIONS[key],
+                "amount_label": KIND_AMOUNT_LABELS[key],
+                "count": len(matching),
+                "total_quantity": sum(card["quantity"] or 0 for card in matching),
+                "total_amount_fen": sum(card["amount_fen"] or 0 for card in matching),
+                "has_quantity": any(card["quantity"] is not None for card in matching),
+                "has_amount": any(card["amount_fen"] is not None for card in matching),
+                "cards": matching[:limit] if limit is not None else matching,
+                "has_more": limit is not None and len(matching) > limit,
+                "unavailable": key == "K6",
+            }
+        )
+    return groups

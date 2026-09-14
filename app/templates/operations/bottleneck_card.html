@@ -1,0 +1,7 @@
+{% load money %}<section class="card bottleneck-card{% if card.snoozed %} snoozed{% endif %}">
+  <p class="eyebrow">{{ card.kind }} · {{ card.kind_label }}</p><h3><a href="{{ card.url }}">{{ card.title }}</a></h3><p>{{ card.detail }}</p>
+  <p class="bottleneck-totals">{% if card.quantity != None %}{{ card.quantity }} 件{% endif %}{% if card.quantity != None and card.amount_fen != None %} · {% endif %}{% if card.amount_fen != None %}¥{{ card.amount_fen|yuan }}{% endif %}</p>
+  {% if card.due_at %}<p>{% if card.overdue %}已超过期限{% else %}建议处理时间{% endif %}：{{ card.due_at|date:'Y-m-d H:i' }}</p>{% endif %}{% if card.age_days != None %}<p>已等待 {{ card.age_days }} 天</p>{% endif %}
+  {% if card.unknown_reason %}<p class="warning">{{ card.unknown_reason }}</p>{% endif %}{% if card.snoozed %}<p class="muted">已设稍后提醒：{{ card.followup.snoozed_until|date:'Y-m-d H:i' }}，卡点仍未解决。</p>{% endif %}{% if card.followup.note %}<p>跟进：{{ card.followup.note }}</p>{% endif %}
+  <div class="actions"><a class="button" href="{{ card.url }}">处理业务</a>{% if card.followup %}<a href="{% url 'followup-edit' card.followup.id %}">备注 / 稍后提醒</a>{% endif %}</div>
+</section>
