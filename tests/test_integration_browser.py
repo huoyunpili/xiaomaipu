@@ -1,6 +1,8 @@
 import os
 import re
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pytest
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -41,6 +43,11 @@ class TestIntegrationBrowser(StaticLiveServerTestCase):
             page.get_by_role("button", name="登录", exact=True).click()
             page.get_by_role("link", name="平台同步", exact=True).click()
             expect(page.get_by_role("heading", name="闲管家订单同步")).to_be_visible()
+            page.get_by_label("首次接入日期（北京时间）").fill(
+                datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
+            )
+            page.get_by_role("button", name="确认并固定起始日").click()
+            expect(page.get_by_text("自动同步起始日：", exact=False)).to_be_visible()
             page.get_by_role("link", name=row.external_order_no, exact=True).click()
             expect(page.get_by_role("heading", name="核对闲鱼订单")).to_be_visible()
             page.get_by_label("本地商品").select_option(str(sku.pk))

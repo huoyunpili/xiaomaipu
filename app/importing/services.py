@@ -172,4 +172,32 @@ def execute_import(job_id):
                 row.status = "ERROR"
                 row.error = str(exc)[:500]
             row.save()
+            if row.order_id:
+                channel = SalesChannel.objects.get(pk=payload["channel_id"])
+                if channel.code == "XIANYU":
+                    # Import and API share the same channel/order identity. Linking metadata
+                    # never replays stock, fulfillment or cash events.
+                    from app.integrations.models import (
+                        ExternalFactApplication,
+                        PlatformOrder,
+                    )
+
+                    platform_rows = PlatformOrder.objects.filter(
+                        external_order_no=payload["external_order_no"],
+                        order__isnull=True,
+                    )
+                    connection_ids = list(platform_rows.values_list("connection_id", flat=True))
+                    platform_rows.update(
+                        order_id=row.order_id, auto_matched=True, needs_review=True
+                    )
+                    ExternalFactApplication.objects.filter(
+                        connection_id__in=connection_ids,
+                        fact_type="ORDER",
+                        external_key=payload["external_order_no"],
+                    ).update(
+                        result=ExternalFactApplication.Result.LINKED,
+                        target_type="SalesOrder",
+                        target_id=str(row.order_id),
+                        reason="历史导入按渠道订单号匹配；未重放库存、履约或现金事件。",
+                    )
     ImportJob.objects.filter(pk=job.pk).update(status="DONE", error="")

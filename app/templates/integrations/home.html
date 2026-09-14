@@ -1,24 +1,64 @@
 {% extends 'base.html' %}{% block content %}
 <h1>闲管家订单同步</h1>
-<p>平台订单先进入待核对列表，关联本地商品后创建销售草稿。实际库存、收款和售后按经营流程核对。</p>
-{% if user.is_shop_admin %}<form method="post" action="{% url 'xgj-operate' 'connect' %}">{% csrf_token %}<button>验证授权店铺</button></form>{% endif %}
-{% if connection %}
-<p>最近完整同步：{{ connection.last_success|default:'尚未完成' }} · 自动同步：{{ connection.enabled|yesno:'已开启,已关闭' }}</p>
-{% if valid_until %}<p>平台授权有效期：{{ valid_until }}{% if connection.service_info.is_trial %}（试用）{% endif %}</p>{% endif %}
-{% if connection.error %}<p class="notice">{{ connection.error }}</p>{% endif %}
-{% if user.is_shop_admin %}<div class="actions">
-<form method="post" action="{% url 'xgj-operate' 'sync' %}">{% csrf_token %}<button>立即同步</button></form>
-<form method="post" action="{% url 'xgj-operate' 'rescan' %}">{% csrf_token %}<button>重新核对全部可查订单</button></form>
-<form method="post" action="{% url 'xgj-operate' 'enable' %}">{% csrf_token %}<button>开启每 5 分钟同步</button></form>
-<form method="post" action="{% url 'xgj-operate' 'disable' %}">{% csrf_token %}<button class="quiet">关闭自动同步</button></form>
-</div>{% endif %}
+<p>平台订单先保存为外部核对事实。同号人工订单会安全关联；库存、发货、到账和退款仍由经营流程确认。</p>
+{% if user.is_shop_admin %}
+<form method="post" action="{% url 'xgj-operate' 'connect' %}">{% csrf_token %}<button>验证授权店铺</button></form>
 {% endif %}
-<p><a href="?pending=1">只看待核对</a> · <a href="{% url 'xgj-home' %}">全部平台订单</a> · <a href="{% url 'import-home' %}">使用表格导入</a></p>
-<div class="table-wrap"><table><thead><tr><th>平台订单号</th><th>商品</th><th>核对状态</th></tr></thead><tbody>
-{% for row in rows %}<tr><td><a href="{% url 'xgj-detail' row.pk %}">{{ row.external_order_no }}</a></td><td>{{ row.snapshot.goods.title }}</td><td>{{ row.needs_review|yesno:'待核对,已核对' }}{% if row.order %} · 已关联{% endif %}</td></tr>{% empty %}<tr><td colspan="3">尚无同步订单。验证店铺后点击立即同步。</td></tr>{% endfor %}
+{% if connection %}
+<section class="card">
+  <h2>同步边界</h2>
+  {% if sync_start_local %}
+  <p>自动同步起始日：<strong>{{ sync_start_local }}</strong>（北京时间当日 00:00，已固定）</p>
+  <p>最近完整同步：{{ connection.last_success|default:'尚未完成' }} · 自动同步：{{ connection.enabled|yesno:'已开启,已关闭' }}</p>
+  {% else %}
+  <p class="notice">旧实例缺少可信接入日期。确认前不会启动自动同步，也不会用升级日期代替。</p>
+  {% if user.is_shop_admin %}
+  <form method="post" action="{% url 'xgj-operate' 'confirm-start' %}">
+    {% csrf_token %}
+    <label>首次接入日期（北京时间）<input type="date" name="sync_start_date" required></label>
+    <button>确认并固定起始日</button>
+  </form>
+  {% endif %}
+  {% endif %}
+  {% if valid_until %}<p>平台授权有效期：{{ valid_until }}{% if connection.service_info.is_trial %}（试用）{% endif %}</p>{% endif %}
+  {% if connection.error %}<p class="notice">{{ connection.error }}</p>{% endif %}
+</section>
+{% if user.is_shop_admin and sync_start_local %}
+<div class="actions">
+  <form method="post" action="{% url 'xgj-operate' 'sync' %}">{% csrf_token %}<button>立即同步</button></form>
+  <form method="post" action="{% url 'xgj-operate' 'rescan' %}">{% csrf_token %}<button>重扫接入日起订单</button></form>
+  <form method="post" action="{% url 'xgj-operate' 'enable' %}">{% csrf_token %}<button>开启每 5 分钟同步</button></form>
+  <form method="post" action="{% url 'xgj-operate' 'disable' %}">{% csrf_token %}<button class="quiet">关闭自动同步</button></form>
+</div>
+{% endif %}
+{% endif %}
+
+<section class="card">
+  <h2>范围与能力</h2>
+  <p>范围内 {{ scope_counts.IN_SCOPE }} 条 · 接入日前历史 {{ scope_counts.HISTORICAL }} 条 · 范围待核对 {{ scope_counts.UNKNOWN }} 条 · 字段待核对 {{ application_review_count }} 项</p>
+  <p>商品查询：当前账号权限和真实样本尚未重新验证，因此不启用商品接口。订单商品 ID 与<a href="{% url 'product-list' %}">人工链接映射</a>继续可用。</p>
+  <p><a href="?pending=1">只看待核对</a> · <a href="{% url 'xgj-home' %}">全部平台订单</a> · <a href="{% url 'import-home' %}">导入接入日前历史</a></p>
+</section>
+
+<div class="table-wrap"><table><thead><tr><th>平台订单号</th><th>商品</th><th>同步范围</th><th>核对状态</th></tr></thead><tbody>
+{% for row in rows %}
+<tr>
+  <td><a href="{% url 'xgj-detail' row.pk %}">{{ row.external_order_no }}</a></td>
+  <td>{{ row.snapshot.goods.title }}</td>
+  <td>{{ row.get_scope_status_display }}</td>
+  <td>{{ row.needs_review|yesno:'待核对,已核对' }}{% if row.order %} · 已关联{% endif %}</td>
+</tr>
+{% empty %}<tr><td colspan="4">尚无同步订单。验证店铺后点击立即同步。</td></tr>{% endfor %}
 </tbody></table></div>
 {% if rows.has_previous %}<a href="?page={{ rows.previous_page_number }}{% if request.GET.pending %}&pending=1{% endif %}">上一页</a>{% endif %} 第 {{ rows.number }} 页 {% if rows.has_next %}<a href="?page={{ rows.next_page_number }}{% if request.GET.pending %}&pending=1{% endif %}">下一页</a>{% endif %}
-<h2>最近同步记录</h2>{% for run in runs %}<p>{{ run.created_at }} · {{ run.status_label }} · {{ run.count }} 条 · {{ run.error }}</p>{% empty %}<p>暂无任务</p>{% endfor %}
-{% if failed_notices %}<p class="notice">有 {{ failed_notices }} 条推送未能读取详情。</p>{% if user.is_shop_admin %}<form method="post" action="{% url 'xgj-operate' 'retry-notices' %}">{% csrf_token %}<button>重试失败通知</button></form>{% endif %}{% endif %}
-<p>列表最多覆盖平台允许查询的 10000 条记录；授权前历史订单仍需核对覆盖范围。公网推送需部署后配置回调地址。</p>
+
+<h2>最近同步记录</h2>
+{% for run in runs %}
+<p>{{ run.created_at }} · {{ run.status_label }} · 扫描 {{ run.scanned_count }} · 范围内 {{ run.accepted_count }} · 历史 {{ run.historical_count }} · 待核对 {{ run.review_count }} · 第 {{ run.page }} 页{% if run.error %} · {{ run.error }}{% endif %}</p>
+{% empty %}<p>暂无任务</p>{% endfor %}
+{% if failed_notices %}
+<p class="notice">有 {{ failed_notices }} 条推送未能读取详情。</p>
+{% if user.is_shop_admin %}<form method="post" action="{% url 'xgj-operate' 'retry-notices' %}">{% csrf_token %}<button>重试失败通知</button></form>{% endif %}
+{% endif %}
+<p>列表查询受平台近六个月更新时间和最多 10000 条限制。断网、授权失效或超出窗口时，本地手工经营和表格导入仍可使用。</p>
 {% endblock %}

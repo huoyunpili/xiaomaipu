@@ -30,6 +30,13 @@ class AuditEvent(BaseModel):
             "money.fee": "补录费用",
             "return.received": "收到退货待检",
             "return.inspected": "退货验收",
+            "xgj.connected": "验证闲管家授权",
+            "xgj.sync_start_confirmed": "确认自动同步起始日",
+            "xgj.enable": "开启闲管家自动同步",
+            "xgj.disable": "关闭闲管家自动同步",
+            "xgj.order_linked": "关联平台订单",
+            "xgj.reviewed": "核对平台变化",
+            "xgj.refund_checked": "查询平台售后事实",
         }.get(self.action, "业务操作")
 
     class Meta:

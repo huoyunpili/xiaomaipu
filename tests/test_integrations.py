@@ -5,6 +5,7 @@ import sys
 import time
 import urllib.error
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -47,7 +48,14 @@ def data(number="123456789", updated=100, **changes):
 
 @pytest.fixture
 def connection(admin_user, shop):
-    return Connection.objects.create(shop=shop, actor=admin_user, seller_id="1234")
+    return Connection.objects.create(
+        shop=shop,
+        actor=admin_user,
+        seller_id="1234",
+        first_connected_at=datetime(1970, 1, 1, tzinfo=UTC),
+        sync_start_at=datetime(1970, 1, 1, tzinfo=UTC),
+        sync_start_basis="TEST",
+    )
 
 
 def test_signature_matches_official_example():
@@ -80,6 +88,10 @@ def test_duplicates_stale_and_null_updates_preserve_business(connection, admin_u
     row = store_order(connection, original)
     assert "secret" not in json.dumps(row.snapshot)
     store_order(connection, original)
+    store_order(connection, data(updated=100, pay_amount=999))
+    row.refresh_from_db()
+    assert row.snapshot["pay_amount"] == 12000
+    assert any("同一更新时间" in issue for issue in row.contract_issues)
     store_order(connection, data(updated=99, pay_amount=1))
     row.refresh_from_db()
     assert row.snapshot["pay_amount"] == 12000

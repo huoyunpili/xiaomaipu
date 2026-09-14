@@ -2,7 +2,7 @@ import hashlib
 import hmac
 import json
 import time
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from django import forms
 from django.conf import settings
@@ -22,8 +22,16 @@ from app.common.forms import to_fen
 from app.inventory.models import StockLot
 
 from .client import APIError, signature
-from .models import Connection, PlatformOrder, PushNotice
-from .services import connect, convert_order, queue_sync, refresh_order, refresh_refund
+from .models import Connection, ExternalFactApplication, PlatformOrder, PushNotice
+from .services import (
+    BEIJING,
+    confirm_sync_start,
+    connect,
+    convert_order,
+    queue_sync,
+    refresh_order,
+    refresh_refund,
+)
 from .tasks import enqueue
 
 
@@ -47,6 +55,16 @@ def home(request):
             "runs": connection.runs.all()[:10] if connection else [],
             "rows": Paginator(orders, 30).get_page(request.GET.get("page")),
             "failed_notices": PushNotice.objects.filter(status="FAILED").count(),
+            "scope_counts": {
+                scope: PlatformOrder.objects.filter(scope_status=scope).count()
+                for scope in PlatformOrder.Scope.values
+            },
+            "application_review_count": ExternalFactApplication.objects.filter(
+                result=ExternalFactApplication.Result.NEEDS_REVIEW
+            ).count(),
+            "sync_start_local": connection.sync_start_at.astimezone(BEIJING).date()
+            if connection and connection.sync_start_at
+            else None,
         },
     )
 
@@ -64,7 +82,16 @@ def operate(request, operation):
             if operation in ("sync", "rescan"):
                 enqueue(queue_sync(connection, full=operation == "rescan"))
                 messages.success(request, "已提交同步任务，可刷新查看结果。")
+            elif operation == "confirm-start":
+                try:
+                    start_date = date.fromisoformat(request.POST.get("sync_start_date", ""))
+                except ValueError as exc:
+                    raise BusinessError("请选择有效的自动同步起始日。") from exc
+                confirm_sync_start(actor=request.user, connection=connection, start_date=start_date)
+                messages.success(request, "自动同步起始日已固定。")
             elif operation in ("enable", "disable"):
+                if operation == "enable" and not connection.sync_start_at:
+                    raise BusinessError("请先确认自动同步起始日。")
                 connection.enabled = operation == "enable"
                 connection.actor = request.user
                 connection.save()
@@ -137,7 +164,19 @@ def detail(request, row_id):
     return render(
         request,
         "integrations/detail.html",
-        {"row": row, "form": form, "refund_deadline": refund_deadline},
+        {
+            "row": row,
+            "form": form,
+            "refund_deadline": refund_deadline,
+            "applications": row.connection.applications.filter(
+                fact_type__in=["ORDER", "REFUND", "REFUND_SUMMARY"],
+                external_key__in=[
+                    row.external_order_no,
+                    *row.platform_refunds.values_list("external_refund_no", flat=True),
+                ],
+            )[:10],
+            "platform_refunds": row.platform_refunds.all(),
+        },
     )
 
 

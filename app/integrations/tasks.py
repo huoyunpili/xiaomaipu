@@ -21,9 +21,7 @@ def sync_orders(run_id):
         else:
             Connection.objects.filter(pk=run.connection_id).update(enabled=False)
     except Exception:
-        SyncRun.objects.filter(pk=run_id).update(
-            status="FAILED", error="同步意外中断，请重试；已有订单会自动去重。"
-        )
+        # execute_sync only lets the current lease generation mark the run failed.
         raise
 
 
@@ -32,17 +30,42 @@ def enqueue(run):
         sync_orders.delay(str(run.pk))
     except Exception:
         SyncRun.objects.filter(pk=run.pk).update(
-            status="FAILED", error="后台队列不可用，请恢复任务服务后重试。"
+            status="FAILED",
+            error="后台队列不可用，请恢复任务服务后重试。",
+            lease_owner="",
+            lease_expires_at=None,
         )
 
 
 @shared_task
 def poll_orders():
     stale = timezone.now() - timedelta(minutes=15)
-    SyncRun.objects.filter(status__in=["QUEUED", "RUNNING", "RETRY"], updated_at__lt=stale).update(
-        status="FAILED", error="任务超时，已释放同步占用，可重新同步。"
+    reclaimed_connections = set()
+    expired = list(
+        SyncRun.objects.filter(status="RUNNING")
+        .filter(
+            Q(lease_expires_at__lte=timezone.now())
+            | Q(lease_expires_at__isnull=True, updated_at__lt=stale)
+        )
+        .values_list("pk", flat=True)
     )
+    for run_id in expired:
+        with transaction.atomic():
+            run = SyncRun.objects.select_for_update().filter(pk=run_id, status="RUNNING").first()
+            if not run:
+                continue
+            if run.lease_expires_at and run.lease_expires_at > timezone.now():
+                continue
+            run.status = "RETRY"
+            run.lease_owner = ""
+            run.lease_expires_at = None
+            run.error = "执行者心跳失效，任务已由本地调度器安全接管。"
+            run.save()
+            reclaimed_connections.add(run.connection_id)
+        enqueue(run)
     for connection in Connection.objects.filter(enabled=True):
+        if connection.pk in reclaimed_connections:
+            continue
         if connection.actor.is_active and connection.actor.is_shop_admin:
             try:
                 enqueue(queue_sync(connection))

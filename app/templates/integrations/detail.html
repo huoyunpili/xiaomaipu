@@ -1,16 +1,46 @@
 {% extends 'base.html' %}{% load money %}{% block content %}
-<p><a href="{% url 'xgj-home' %}">返回平台订单</a></p><h1>核对闲鱼订单</h1>
+<p><a href="{% url 'xgj-home' %}">返回平台订单</a></p>
+<h1>核对闲鱼订单</h1>
 <p>{{ row.external_order_no }} · {{ row.snapshot.goods.title }}</p>
+<p>同步范围：<strong>{{ row.get_scope_status_display }}</strong>{% if row.scope_reason %} · {{ row.scope_reason }}{% endif %}</p>
+{% if row.contract_issues %}<div class="notice"><strong>字段待核对</strong><ul>{% for issue in row.contract_issues %}<li>{{ issue }}</li>{% endfor %}</ul></div>{% endif %}
 <p>买家称呼：{{ row.snapshot.buyer_nick|default:'未提供' }} · 数量：{{ row.snapshot.goods.quantity }}</p>
 <p>平台订单金额：{{ row.snapshot.total_amount|yuan }} · 买家支付金额：{{ row.snapshot.pay_amount|yuan }} · 平台退款金额：{{ row.snapshot.refund_amount|yuan }}</p>
 <p>平台状态码：{{ row.snapshot.order_status }} · 退款状态码：{{ row.snapshot.refund_status }}（请在闲鱼核对具体交易状态）</p>
-<p>物流：{{ row.snapshot.express_name }} {{ row.snapshot.waybill_no }}</p>
-<p class="notice">买家支付金额不代表本店实际到账。请核对成交价及运费；平台状态变更不自动扣库存或登记收退款。</p>
+<p>平台发货：方式代码 {{ row.snapshot.consign_type|default:'未提供' }} · 时间戳 {{ row.snapshot.consign_time|default:'未提供' }}</p>
+<p>物流：{{ row.snapshot.express_name|default:'未提供' }} {{ row.snapshot.waybill_no }}</p>
+<p class="notice">平台付款和交易成功不代表本店实际到账。平台物流也不会自动扣库存或把本地订单标为已发货。</p>
 <form method="post">{% csrf_token %}<button name="action" value="refresh">刷新平台详情</button></form>
+
 <h2>平台售后核对</h2>
 <form method="post">{% csrf_token %}<button name="action" value="refund">查询平台售后详情</button></form>
-{% if row.refund_checked_at %}<p>最近查询：{{ row.refund_checked_at }}</p><p>申请金额：{{ row.refund_snapshot.apply_amount|yuan }} · 退款金额：{{ row.refund_snapshot.refund_amount|yuan }}</p>{% if refund_deadline %}<p class="notice">平台处理截止时间：{{ refund_deadline }}，请在闲鱼核对并处理。</p>{% endif %}<p>售后状态码：{{ row.refund_snapshot.refund_status }}。实际退款及退货验收请在关联销售单中分别登记。</p>{% endif %}
+{% if row.refund_checked_at %}
+<p>最近查询：{{ row.refund_checked_at }}</p>
+<p>申请金额：{{ row.refund_snapshot.apply_amount|yuan }} · 退款金额：{{ row.refund_snapshot.refund_amount|yuan }}</p>
+{% if refund_deadline %}<p class="notice">平台处理截止时间：{{ refund_deadline }}，请在闲鱼核对并处理。</p>{% endif %}
+<p>售后状态码：{{ row.refund_snapshot.refund_status }}。实际退款及退货验收请在关联销售单中分别登记。</p>
+{% endif %}
+{% for refund in platform_refunds %}
+<div class="card">
+  <p>售后编号：{{ refund.external_refund_no }} · 状态码 {{ refund.snapshot.refund_status }}</p>
+  <p>退货物流：{{ refund.snapshot.express_name|default:'未提供' }} {{ refund.snapshot.waybill_no }}</p>
+  {% if refund.contract_issues %}<p class="notice">{{ refund.contract_issues|join:'；' }}</p>{% endif %}
+</div>
+{% endfor %}
+
+<h2>外部事实应用记录</h2>
+{% for application in applications %}
+<p>{{ application.applied_at }} · {{ application.fact_type }} · {{ application.get_result_display }}{% if application.reason %} · {{ application.reason }}{% endif %}</p>
+{% empty %}<p>暂无应用记录。</p>{% endfor %}
+
 {{ form.non_field_errors }}
-{% if row.order %}<p><a href="{% url 'order-detail' row.order.pk %}">查看已关联销售单 {{ row.order.number }}</a></p><form method="post">{% csrf_token %}<button name="action" value="review">已核对本次平台变化</button></form>
-{% else %}<h2>关联商品并创建草稿</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button name="action" value="convert">创建或关联销售草稿</button></form>{% endif %}
+{% if row.order %}
+<p><a href="{% url 'order-detail' row.order.pk %}">查看已关联销售单 {{ row.order.number }}</a></p>
+<form method="post">{% csrf_token %}<button name="action" value="review">已核对本次平台变化</button></form>
+{% elif row.scope_status == 'HISTORICAL' %}
+<p class="notice">该订单早于接入起始日。请通过<a href="{% url 'import-home' %}">历史表格导入</a>核对，系统不会把它作为新订单执行。</p>
+{% else %}
+<h2>关联商品并创建草稿</h2>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button name="action" value="convert">创建或关联销售草稿</button></form>
+{% endif %}
 {% endblock %}
