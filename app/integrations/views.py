@@ -22,7 +22,7 @@ from app.common.forms import to_fen
 from app.inventory.models import StockLot
 
 from .client import APIError, signature
-from .models import Connection, ExternalFactApplication, PlatformOrder, PushNotice
+from .models import Connection, ExternalFactApplication, PlatformOrder, PushNotice, SyncRun
 from .services import (
     BEIJING,
     confirm_sync_start,
@@ -44,15 +44,31 @@ def home(request):
         datetime.fromtimestamp(end, UTC) if type(end) is int and 0 < end < 10**10 else None
     )
     orders = PlatformOrder.objects.select_related("order")
+    show_all = request.GET.get("all") == "1"
+    if not show_all:
+        orders = orders.exclude(scope_status=PlatformOrder.Scope.HISTORICAL)
     if request.GET.get("pending"):
         orders = orders.filter(needs_review=True)
+    runs = connection.runs.order_by("-created_at") if connection else SyncRun.objects.none()
+    latest_run = runs.first()
+    latest_data_run = runs.filter(status="DONE", scanned_count__gt=0).first()
+    recovered_failure_count = 0
+    if connection and connection.last_success:
+        recovered_failure_count = runs.filter(
+            status="FAILED", created_at__lte=connection.last_success
+        ).count()
     return render(
         request,
         "integrations/home.html",
         {
             "connection": connection,
             "valid_until": valid_until,
-            "runs": connection.runs.all()[:10] if connection else [],
+            "latest_run": latest_run,
+            "latest_data_run": latest_data_run,
+            "recovered_failure_count": recovered_failure_count,
+            "runs": runs[:20] if request.GET.get("history") == "1" else [],
+            "show_history": request.GET.get("history") == "1",
+            "show_all": show_all,
             "rows": Paginator(orders, 30).get_page(request.GET.get("page")),
             "failed_notices": PushNotice.objects.filter(status="FAILED").count(),
             "scope_counts": {

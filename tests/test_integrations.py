@@ -15,7 +15,7 @@ from django.test import override_settings
 
 from app.common.business import BusinessError
 from app.integrations.client import APIError, XgjClient, signature
-from app.integrations.models import Connection, PlatformOrder, PushNotice
+from app.integrations.models import Connection, PlatformOrder, PushNotice, SyncRun
 from app.integrations.services import (
     connect,
     convert_order,
@@ -220,6 +220,38 @@ def test_client_suppresses_signed_url_and_buyer_payload():
     with patch("urllib.request.build_opener", return_value=opener), pytest.raises(APIError) as exc:
         XgjClient().call("orders")
     assert not exc.value.retryable and "secret" not in str(exc.value)
+
+
+@override_settings(XGJ_APP_KEY="test-key", XGJ_APP_SECRET="test-secret")
+def test_client_explains_permission_error_and_stops_retrying():
+    opener = MagicMock()
+    opener.open.return_value.__enter__.return_value.read.return_value = b'{"code":100008}'
+    with patch("urllib.request.build_opener", return_value=opener), pytest.raises(APIError) as exc:
+        XgjClient().call("orders")
+    assert not exc.value.retryable
+    assert "100008" in str(exc.value) and "停止自动重试" in str(exc.value)
+
+
+def test_platform_pages_show_actionable_orders_and_collapse_recovered_errors(
+    client, connection, operator
+):
+    now = int(time.time())
+    row = store_order(connection, data(order_time=now, update_time=now, pay_amount=12345))
+    failure = SyncRun.objects.create(connection=connection, status="FAILED", error="旧的权限错误")
+    connection.last_success = failure.created_at
+    connection.save()
+    client.force_login(operator)
+
+    dashboard = client.get("/").content.decode()
+    assert "平台新订单" in dashboard and "测试商品" in dashboard and "123.45" in dashboard
+
+    page = client.get("/integrations/xgj/").content.decode()
+    assert "现在有什么数据" in page and "最近 20 次运行记录" in page
+    assert "旧的权限错误" not in page and "后续同步已经成功恢复" in page
+    assert row.external_order_no in page and "123.45" in page
+
+    history = client.get("/integrations/xgj/?history=1").content.decode()
+    assert "旧的权限错误" in history
 
 
 def test_pages_permissions_and_conversion(client, connection, operator, admin_user):

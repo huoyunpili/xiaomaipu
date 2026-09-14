@@ -1,4 +1,4 @@
-{% extends 'base.html' %}{% block content %}
+{% extends 'base.html' %}{% load money %}{% block content %}
 <h1>闲管家订单同步</h1>
 <p>平台订单先保存为外部核对事实。同号人工订单会安全关联；库存、发货、到账和退款仍由经营流程确认。</p>
 {% if user.is_shop_admin %}
@@ -34,28 +34,37 @@
 {% endif %}
 
 <section class="card">
-  <h2>范围与能力</h2>
-  <p>范围内 {{ scope_counts.IN_SCOPE }} 条 · 接入日前历史 {{ scope_counts.HISTORICAL }} 条 · 范围待核对 {{ scope_counts.UNKNOWN }} 条 · 字段待核对 {{ application_review_count }} 项</p>
+  <h2>现在有什么数据</h2>
+  <p><strong>{{ scope_counts.IN_SCOPE }}</strong> 条接入日后订单 · {{ scope_counts.HISTORICAL }} 条接入日前快照 · {{ scope_counts.UNKNOWN }} 条范围待确认 · {{ application_review_count }} 项字段待确认</p>
+  {% if latest_run %}<p>最近检查：{{ latest_run.created_at }} · {{ latest_run.status_label }}{% if latest_run.status == 'DONE' %} · 本次发现 {{ latest_run.scanned_count }} 条变化{% endif %}</p>{% endif %}
+  {% if latest_data_run %}<p class="muted">最近一次取得数据：扫描 {{ latest_data_run.scanned_count }} 条，其中接入日后 {{ latest_data_run.accepted_count }} 条、接入日前 {{ latest_data_run.historical_count }} 条。</p>{% endif %}
+  {% if recovered_failure_count %}<p class="muted">此前 {{ recovered_failure_count }} 次同步失败，后续同步已经成功恢复。</p>{% endif %}
   <p>商品查询：当前账号权限和真实样本尚未重新验证，因此不启用商品接口。订单商品 ID 与<a href="{% url 'product-list' %}">人工链接映射</a>继续可用。</p>
-  <p><a href="?pending=1">只看待核对</a> · <a href="{% url 'xgj-home' %}">全部平台订单</a> · <a href="{% url 'import-home' %}">导入接入日前历史</a></p>
+  <p><a href="{% url 'xgj-home' %}">当前订单</a> · <a href="?pending=1">只看待核对</a> · <a href="?all=1">查看全部平台快照</a> · <a href="{% url 'import-home' %}">导入接入日前历史</a></p>
 </section>
 
-<div class="table-wrap"><table><thead><tr><th>平台订单号</th><th>商品</th><th>同步范围</th><th>核对状态</th></tr></thead><tbody>
+<h2>{% if show_all %}全部平台快照{% else %}当前订单{% endif %}</h2>
+<div class="table-wrap"><table><thead><tr><th>平台订单号</th><th>商品</th><th>实付 / 数量</th><th>下单时间</th><th>平台状态</th><th>核对状态</th></tr></thead><tbody>
 {% for row in rows %}
 <tr>
   <td><a href="{% url 'xgj-detail' row.pk %}">{{ row.external_order_no }}</a></td>
-  <td>{{ row.snapshot.goods.title }}</td>
-  <td>{{ row.get_scope_status_display }}</td>
+  <td>{{ row.snapshot.goods.title|default:'平台未提供商品标题' }}</td>
+  <td>¥{{ row.snapshot.pay_amount|yuan }} / {{ row.snapshot.goods.quantity|default:'?' }} 件</td>
+  <td>{{ row.source_created_at|date:'Y-m-d H:i'|default:'待确认' }}</td>
+  <td>代码 {{ row.snapshot.order_status|default:'待确认' }}</td>
   <td>{{ row.needs_review|yesno:'待核对,已核对' }}{% if row.order %} · 已关联{% endif %}</td>
 </tr>
-{% empty %}<tr><td colspan="4">尚无同步订单。验证店铺后点击立即同步。</td></tr>{% endfor %}
+{% empty %}<tr><td colspan="6">当前范围内没有平台订单。可查看全部平台快照，或等待下一次自动同步。</td></tr>{% endfor %}
 </tbody></table></div>
-{% if rows.has_previous %}<a href="?page={{ rows.previous_page_number }}{% if request.GET.pending %}&pending=1{% endif %}">上一页</a>{% endif %} 第 {{ rows.number }} 页 {% if rows.has_next %}<a href="?page={{ rows.next_page_number }}{% if request.GET.pending %}&pending=1{% endif %}">下一页</a>{% endif %}
+{% if rows.has_previous %}<a href="?page={{ rows.previous_page_number }}{% if request.GET.pending %}&pending=1{% endif %}{% if show_all %}&all=1{% endif %}">上一页</a>{% endif %} 第 {{ rows.number }} 页 {% if rows.has_next %}<a href="?page={{ rows.next_page_number }}{% if request.GET.pending %}&pending=1{% endif %}{% if show_all %}&all=1{% endif %}">下一页</a>{% endif %}
 
-<h2>最近同步记录</h2>
+<h2>同步运行记录</h2>
+{% if show_history %}
 {% for run in runs %}
 <p>{{ run.created_at }} · {{ run.status_label }} · 扫描 {{ run.scanned_count }} · 范围内 {{ run.accepted_count }} · 历史 {{ run.historical_count }} · 待核对 {{ run.review_count }} · 第 {{ run.page }} 页{% if run.error %} · {{ run.error }}{% endif %}</p>
 {% empty %}<p>暂无任务</p>{% endfor %}
+<p><a href="{% url 'xgj-home' %}{% if show_all %}?all=1{% endif %}">收起运行记录</a></p>
+{% else %}<p><a href="?history=1{% if show_all %}&all=1{% endif %}">查看最近 20 次运行记录</a></p>{% endif %}
 {% if failed_notices %}
 <p class="notice">有 {{ failed_notices }} 条推送未能读取详情。</p>
 {% if user.is_shop_admin %}<form method="post" action="{% url 'xgj-operate' 'retry-notices' %}">{% csrf_token %}<button>重试失败通知</button></form>{% endif %}

@@ -33,6 +33,12 @@ def health(request):
 @require_GET
 def dashboard(request):
     active_bottlenecks = bottlenecks()
+    platform_connection = Connection.objects.first()
+    platform_orders = (
+        PlatformOrder.objects.exclude(scope_status=PlatformOrder.Scope.HISTORICAL)
+        .filter(needs_review=True)
+        .order_by("-source_created_at", "-source_updated")
+    )
     return render(
         request,
         "dashboard.html",
@@ -48,8 +54,9 @@ def dashboard(request):
             )[:8],
             "risk_customers": Customer.objects.filter(suggestion="PENDING")[:8],
             "import_failures": ImportJob.objects.filter(status="FAILED")[:8],
-            "platform_pending": PlatformOrder.objects.filter(needs_review=True).count(),
-            "platform_connection": Connection.objects.first(),
+            "platform_pending": platform_orders.count(),
+            "platform_pending_orders": platform_orders[:5],
+            "platform_connection": platform_connection,
             "refund_orders": SalesOrder.objects.filter(
                 received_fen__gt=F("amount_fen") - F("amount_reduction_fen") + F("refunded_fen")
             )[:8],

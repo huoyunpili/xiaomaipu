@@ -16,6 +16,15 @@ class APIError(Exception):
         self.retryable = retryable
 
 
+BUSINESS_ERROR_MESSAGES = {
+    100008: (
+        "闲管家拒绝了订单接口（错误 100008）。系统已停止自动重试，避免反复报错；"
+        "请在闲管家确认当前店铺已授权且套餐包含订单 API，然后重新验证授权并开启同步。"
+        "现有本地数据不会丢失。"
+    ),
+}
+
+
 def signature(key, secret, timestamp, body, seller=""):
     parts = [key, hashlib.md5(body).hexdigest(), str(timestamp)]
     if seller:
@@ -83,7 +92,12 @@ class XgjClient:
         if not isinstance(payload, dict) or type(payload.get("code")) is not int:
             raise APIError("平台响应缺少结果代码。")
         if payload["code"] != 0:
-            raise APIError(f"平台业务错误 {payload['code']}，请检查授权、套餐或接口权限。")
+            code = payload["code"]
+            raise APIError(
+                BUSINESS_ERROR_MESSAGES.get(
+                    code, f"闲管家接口返回错误 {code}，请检查店铺授权、套餐或接口权限。"
+                )
+            )
         data = payload.get("data")
         if not isinstance(data, dict):
             raise APIError("平台返回数据格式异常。")
