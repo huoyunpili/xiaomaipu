@@ -21,6 +21,8 @@ staticfiles/
 artifacts/
 *.sqlite3
 .local/
+.local-release/
+release-data/
 
 # Local document working copies and render previews
 .docx_work/

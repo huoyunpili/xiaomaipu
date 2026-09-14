@@ -1,0 +1,128 @@
+name: ${COMPOSE_PROJECT_NAME:-xianyu-seller-local}
+
+x-app-environment: &app-environment
+  DJANGO_SETTINGS_MODULE: app.config.settings.local_release
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Generate DJANGO_SECRET_KEY in config.env}
+  POSTGRES_DB: ${POSTGRES_DB:-seller}
+  POSTGRES_USER: ${POSTGRES_USER:-seller}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Generate POSTGRES_PASSWORD in config.env}
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://127.0.0.1:8765}
+  DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-127.0.0.1,localhost}
+  DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-http://127.0.0.1:8765,http://localhost:8765}
+  PRIVATE_MEDIA_ROOT: /srv/private-media
+  LOCAL_BACKUP_ROOT: /srv/backups
+  RELEASE_VERSION: ${RELEASE_VERSION:-0.5.0-rc1}
+  XGJ_APP_KEY: ${XGJ_APP_KEY:-}
+  XGJ_APP_SECRET: ${XGJ_APP_SECRET:-}
+  XGJ_BASE_URL: ${XGJ_BASE_URL:-}
+
+x-app: &app
+  image: ${APP_IMAGE:-xianyu-seller-local:0.5.0-rc1}
+  restart: unless-stopped
+  environment: *app-environment
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks:
+    - internal
+
+services:
+  postgres:
+    image: postgres:17.6@sha256:00bc86618629af00d2937fdc5a5d63db3ff8450acf52f0636ec813c7f4902929
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-seller}
+      POSTGRES_USER: ${POSTGRES_USER:-seller}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Generate POSTGRES_PASSWORD in config.env}
+    volumes:
+      - "${SELLER_DATA_DIR:?Set SELLER_DATA_DIR in config.env}/postgres:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-seller} -d ${POSTGRES_DB:-seller}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - internal
+
+  redis:
+    image: redis:8.0.3-alpine@sha256:25c0ae32c6c2301798579f5944af53729766a18eff5660bbef196fc2e6214a9c
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - "${SELLER_DATA_DIR:?Set SELLER_DATA_DIR in config.env}/redis:/data"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - internal
+
+  web:
+    <<: *app
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+      args:
+        APP_VERSION: ${RELEASE_VERSION:-0.5.0-rc1}
+    command: ["gunicorn", "app.config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "300", "--access-logfile", "-"]
+    volumes:
+      - "${SELLER_DATA_DIR:?Set SELLER_DATA_DIR in config.env}/private-media:/srv/private-media"
+      - "${SELLER_DATA_DIR:?Set SELLER_DATA_DIR in config.env}/backups:/srv/backups:ro"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready/', timeout=5)"]
+      interval: 10s
+      timeout: 6s
+      retries: 12
+    networks:
+      - internal
+
+  worker:
+    <<: *app
+    command: ["celery", "-A", "app.config", "worker", "--loglevel=INFO", "--pool=solo"]
+    volumes:
+      - "${SELLER_DATA_DIR:?Set SELLER_DATA_DIR in config.env}/private-media:/srv/private-media"
+
+  beat:
+    <<: *app
+    command: ["celery", "-A", "app.config", "beat", "--loglevel=INFO", "--schedule=/srv/beat/celerybeat-schedule"]
+    volumes:
+      - "${SELLER_DATA_DIR:?Set SELLER_DATA_DIR in config.env}/beat:/srv/beat"
+
+  static:
+    image: ${APP_IMAGE:-xianyu-seller-local:0.5.0-rc1}
+    user: "0:0"
+    command: ["sh", "-c", "cp -a /srv/app/staticfiles/. /srv/static/"]
+    restart: "no"
+    volumes:
+      - static-data:/srv/static
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-8765}:8080"
+    volumes:
+      - ./Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - static-data:/srv/static:ro
+    depends_on:
+      web:
+        condition: service_healthy
+      static:
+        condition: service_completed_successfully
+    networks:
+      - internal
+
+volumes:
+  static-data:
+
+networks:
+  internal:
+    driver: bridge

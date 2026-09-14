@@ -17,6 +17,8 @@ from app.shops.channel_views import channel_edit
 from app.shops.views import settings_view
 
 urlpatterns = [
+    path("health/live/", views.health_live, name="health-live"),
+    path("health/ready/", views.health_ready, name="health-ready"),
     path("operations/", operation_views.bottleneck_list, name="bottleneck-list"),
     path(
         "operations/thresholds/", operation_views.threshold_settings, name="bottleneck-thresholds"

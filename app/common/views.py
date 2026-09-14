@@ -16,6 +16,8 @@ from app.orders.models import ReturnReceipt, SalesOrder
 from app.procurement.models import Purchase
 from app.shops.models import SalesChannel, Shop
 
+from .release import local_release_status
+
 
 @require_GET
 def health(request):
@@ -65,8 +67,19 @@ def dashboard(request):
             )[:6],
             "bottleneck_count": len(active_bottlenecks),
             "bottleneck_preview": active_bottlenecks[:6],
+            "local_release": local_release_status(),
         },
     )
+
+
+@require_GET
+def health_live(request):
+    return JsonResponse({"status": "ok"})
+
+
+@require_GET
+def health_ready(request):
+    return health(request)
 
 
 @login_required
