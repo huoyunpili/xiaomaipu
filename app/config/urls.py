@@ -10,12 +10,32 @@ from app.importing import views as import_views
 from app.insights import views as insight_views
 from app.integrations import views as integration_views
 from app.inventory import views as inventory_views
+from app.operations import views as operation_views
 from app.orders import views as order_views
 from app.procurement import views as procurement_views
 from app.shops.channel_views import channel_edit
 from app.shops.views import settings_view
 
 urlpatterns = [
+    path("operations/", operation_views.bottleneck_list, name="bottleneck-list"),
+    path(
+        "operations/thresholds/", operation_views.threshold_settings, name="bottleneck-thresholds"
+    ),
+    path(
+        "operations/followups/<uuid:followup_id>/",
+        operation_views.followup_edit,
+        name="followup-edit",
+    ),
+    path(
+        "products/<uuid:sku_id>/listing-mappings/new/",
+        operation_views.listing_mapping_new,
+        name="listing-mapping-new",
+    ),
+    path(
+        "purchases/<uuid:purchase_id>/supply-allocations/new/",
+        operation_views.supply_allocate,
+        name="supply-allocation-new",
+    ),
     path("integrations/xgj/", integration_views.home, name="xgj-home"),
     path("integrations/xgj/push/", integration_views.webhook, name="xgj-webhook"),
     path("integrations/xgj/order/<uuid:row_id>/", integration_views.detail, name="xgj-detail"),

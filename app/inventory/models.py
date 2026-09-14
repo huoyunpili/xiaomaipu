@@ -44,6 +44,7 @@ class StockLot(BaseModel, ConditionFields):
 
     class Meta:
         ordering = ["created_at", "id"]
+        indexes = [models.Index(fields=["sku", "original_received_at"])]
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(on_hand_qty__gte=models.F("reserved_qty")),

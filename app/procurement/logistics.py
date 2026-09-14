@@ -10,6 +10,7 @@ from app.common.business import BusinessError, record_event, whole
 from app.common.services import execute_once
 from app.inventory.models import StockLot, StockMovement
 from app.inventory.services import receive_stock
+from app.operations.models import CommitmentRevision
 from app.orders.models import SalesOrder
 
 from .models import (
@@ -103,7 +104,17 @@ def logistics_action(
                 raise BusinessError("到货记录不属于这张采购单。")
         receipt = None
         if operation == "promise":
+            old_due_at = purchase.promised_dispatch_at
             purchase.promised_dispatch_at = expected_arrival_at
+            if old_due_at != expected_arrival_at:
+                CommitmentRevision.objects.create(
+                    object_type="purchase_dispatch_promise",
+                    object_id=purchase.pk,
+                    old_due_at=old_due_at,
+                    new_due_at=expected_arrival_at,
+                    reason=reason,
+                    actor=actor,
+                )
         elif operation == "eta":
             if dispatch is None:
                 raise BusinessError("请选择发运批次。")
@@ -113,8 +124,18 @@ def logistics_action(
                 and expected_arrival_at < dispatch.dispatched_at
             ):
                 raise BusinessError("预计到货不能早于发货。")
+            old_due_at = dispatch.expected_arrival_at
             dispatch.expected_arrival_at = expected_arrival_at
             dispatch.save()
+            if old_due_at != expected_arrival_at:
+                CommitmentRevision.objects.create(
+                    object_type="purchase_dispatch_eta",
+                    object_id=dispatch.pk,
+                    old_due_at=old_due_at,
+                    new_due_at=expected_arrival_at,
+                    reason=reason,
+                    actor=actor,
+                )
         elif operation == "source":
             if (
                 purchase.legacy_logistics

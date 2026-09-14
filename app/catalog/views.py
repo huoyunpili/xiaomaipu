@@ -8,6 +8,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 from app.common.form_views import business_form
 from app.common.forms import to_fen
 from app.inventory.models import StockMovement
+from app.operations.models import ListingMapping
 
 from .forms import NewProductForm, ProductForm
 from .models import CONDITION_FIELDS, SKU
@@ -47,6 +48,9 @@ def product_detail(request, sku_id):
             "sku": sku,
             "lots": sku.lots.all(),
             "movements": StockMovement.objects.filter(sku=sku).select_related("lot")[:50],
+            "listing_mappings": ListingMapping.objects.filter(sku=sku).select_related(
+                "channel", "confirmed_by"
+            ),
         },
     )
 

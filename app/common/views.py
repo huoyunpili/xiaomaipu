@@ -11,6 +11,7 @@ from app.catalog.models import SKU
 from app.contacts.models import Customer
 from app.importing.models import ImportJob
 from app.integrations.models import Connection, PlatformOrder
+from app.operations.projections import bottlenecks
 from app.orders.models import ReturnReceipt, SalesOrder
 from app.procurement.models import Purchase
 from app.shops.models import SalesChannel, Shop
@@ -29,6 +30,7 @@ def health(request):
 @login_required
 @require_GET
 def dashboard(request):
+    active_bottlenecks = bottlenecks()
     return render(
         request,
         "dashboard.html",
@@ -61,6 +63,8 @@ def dashboard(request):
                     + F("refunded_fen"),
                 )
             )[:6],
+            "bottleneck_count": len(active_bottlenecks),
+            "bottleneck_preview": active_bottlenecks[:6],
         },
     )
 

@@ -51,6 +51,10 @@ class MoneyEntry(BaseModel):
 
     class Meta:
         ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["order", "occurred_at"]),
+            models.Index(fields=["purchase", "occurred_at"]),
+        ]
         constraints = [
             models.CheckConstraint(
                 condition=(

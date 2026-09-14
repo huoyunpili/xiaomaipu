@@ -3,6 +3,7 @@ from django import forms
 from app.catalog.forms import ConditionForm
 from app.catalog.models import SKU
 from app.common.forms import SubmissionForm, money_field
+from app.orders.models import OrderItem
 
 from .models import Supplier
 
@@ -20,10 +21,20 @@ class SupplierForm(SubmissionForm):
 
 
 class PurchaseAllocationForm(SubmissionForm):
+    order_item = forms.ModelChoiceField(queryset=OrderItem.objects.none(), widget=forms.HiddenInput)
     version = forms.IntegerField(widget=forms.HiddenInput)
     lot_version = forms.IntegerField(widget=forms.HiddenInput)
     quantity = forms.IntegerField(label="本次为订单备货数量", min_value=1, max_value=1000000)
     acknowledged = forms.BooleanField(label="已核对实际货况，确认这组货可用于此订单")
+
+    def __init__(self, *args, purchase_id, **kwargs):
+        super().__init__(*args, **kwargs)
+        field = self.fields["order_item"]
+        assert isinstance(field, forms.ModelChoiceField)
+        field.queryset = OrderItem.objects.filter(
+            supply_allocations__purchase_id=purchase_id,
+            order__status__in=["CONFIRMED", "PARTIAL"],
+        ).select_related("order")
 
 
 class QuoteForm(ConditionForm):

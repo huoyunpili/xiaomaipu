@@ -3,6 +3,7 @@ from app.common.business import BusinessError, whole
 from app.common.services import execute_once
 from app.inventory.models import InventoryBalance, StockLot
 from app.inventory.services import move_stock
+from app.operations.models import SupplyAllocation
 from app.orders.models import OrderItem, Reservation, SalesOrder
 from app.orders.services import event, refresh_profit
 
@@ -18,6 +19,7 @@ def reserve_purchase_receipt(
     lot_version,
     quantity,
     acknowledged,
+    order_item_id=None,
     request_id="",
 ):
     require_operator(actor)
@@ -26,13 +28,17 @@ def reserve_purchase_receipt(
         raise BusinessError("请先核对实际货况，确认这组货可用于该订单。")
 
     def action():
-        receipt = PurchaseReceipt.objects.select_related("purchase__order_item").get(pk=receipt_id)
-        original = receipt.purchase.order_item
-        if original is None:
-            raise BusinessError("这笔采购没有关联销售订单。")
+        source = PurchaseReceipt.objects.select_related("purchase").get(pk=receipt_id)
+        target_item_id = order_item_id or source.purchase.order_item_id
+        if target_item_id is None:
+            raise BusinessError("请选择这笔采购已安排的销售订单。")
+        original = OrderItem.objects.select_related("order").get(pk=target_item_id)
         # Same order -> SKU balance lock order as sales cancellation and shipment.
         order = SalesOrder.objects.select_for_update().get(pk=original.order_id)
         item = OrderItem.objects.get(pk=original.pk)
+        receipt = PurchaseReceipt.objects.select_related("purchase").get(pk=receipt_id)
+        if not SupplyAllocation.objects.filter(purchase=receipt.purchase, order_item=item).exists():
+            raise BusinessError("这笔采购没有安排给所选销售订单。")
         balance = InventoryBalance.objects.select_for_update().get(sku_id=item.sku_id)
         lot = StockLot.objects.get(pk=receipt.lot_id)
         if order.version != version or lot.version != lot_version:
@@ -74,6 +80,7 @@ def reserve_purchase_receipt(
         submission_key,
         dict(
             receipt_id=str(receipt_id),
+            order_item_id=str(order_item_id or "legacy-primary"),
             version=version,
             lot_version=lot_version,
             quantity=quantity,

@@ -5,6 +5,7 @@ from app.common.services import execute_once
 from app.finance.models import MoneyEntry
 from app.inventory.models import InventoryBalance, StockLot
 from app.inventory.services import move_stock
+from app.operations.models import SupplyAllocation
 from app.orders.models import OrderItem, SalesOrder
 
 from .models import Purchase, PurchaseEvent, PurchaseReceipt, Supplier, SupplierQuote
@@ -141,6 +142,14 @@ def create_purchase(
         )
         purchase.full_clean()
         purchase.save()
+        if order_item_id:
+            SupplyAllocation.objects.create(
+                purchase=purchase,
+                order_item_id=order_item_id,
+                quantity=quantity,
+                actor=actor,
+                source="MANUAL",
+            )
         record_event(actor, "purchase.created", purchase, request_id, quantity=quantity)
         return {"purchase_id": str(purchase.pk)}
 

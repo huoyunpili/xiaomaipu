@@ -11,6 +11,8 @@ from django.views.decorators.http import require_GET, require_http_methods
 from app.catalog.models import CONDITION_FIELDS
 from app.common.form_views import business_form
 from app.common.forms import to_fen
+from app.operations.models import CommitmentRevision, SupplyAllocation
+from app.operations.projections import purchase_progress
 from app.orders.models import OrderItem
 
 from .allocation import reserve_purchase_receipt
@@ -180,6 +182,12 @@ def purchase_detail(request, purchase_id):
     purchase = get_object_or_404(
         Purchase.objects.select_related("order_item__order"), pk=purchase_id
     )
+    progress = purchase_progress([purchase.pk])[0]
+    dispatch_ids = list(purchase.dispatches.values_list("id", flat=True))
+    commitment_revisions = CommitmentRevision.objects.filter(
+        Q(object_type="purchase_dispatch_promise", object_id=purchase.pk)
+        | Q(object_type="purchase_dispatch_eta", object_id__in=dispatch_ids)
+    ).select_related("actor")
     return render(
         request,
         "procurement/detail.html",
@@ -190,6 +198,11 @@ def purchase_detail(request, purchase_id):
             "cash_entries": purchase.money_entries.all()[:100],
             "dispatches": purchase.dispatches.prefetch_related("dispositions"),
             "arrivals": purchase.arrivals.prefetch_related("inspections"),
+            "supply_allocations": SupplyAllocation.objects.filter(purchase=purchase).select_related(
+                "order_item__order"
+            ),
+            "progress": progress,
+            "commitment_revisions": commitment_revisions,
         },
     )
 
@@ -198,27 +211,52 @@ def purchase_detail(request, purchase_id):
 @require_http_methods(["GET", "POST"])
 def purchase_allocate(request, receipt_id):
     receipt = get_object_or_404(
-        PurchaseReceipt.objects.select_related("lot", "purchase__order_item__order"), pk=receipt_id
+        PurchaseReceipt.objects.select_related("lot", "purchase"), pk=receipt_id
     )
-    item = receipt.purchase.order_item
-    if item is None:
+    requested_item = request.POST.get("order_item") or request.GET.get("item")
+    allocations = SupplyAllocation.objects.filter(
+        purchase=receipt.purchase,
+        order_item__order__status__in=["CONFIRMED", "PARTIAL"],
+    ).select_related("order_item__order")
+    allocation = (
+        allocations.filter(order_item_id=requested_item).first()
+        if requested_item
+        else next(iter(allocations[:2]), None)
+    )
+    if not requested_item and allocation is not None and allocations.count() != 1:
+        allocation = None
+    if allocation is None:
         raise Http404
+    item = allocation.order_item
+    form_data = request.POST.copy() if request.method == "POST" else None
+    if form_data is not None and not form_data.get("order_item"):
+        form_data["order_item"] = str(item.pk)
     form = PurchaseAllocationForm(
-        request.POST if request.method == "POST" else None,
+        form_data,
+        purchase_id=receipt.purchase_id,
         initial={
+            "order_item": item.pk,
             "version": item.order.version,
             "lot_version": receipt.lot.version,
             "quantity": min(item.shortage_qty, receipt.lot.available_qty),
         },
     )
+
+    def save(data):
+        data["order_item_id"] = data.pop("order_item").pk
+        return reserve_purchase_receipt(
+            actor=request.user,
+            receipt_id=receipt.pk,
+            request_id=request.request_id,
+            **data,
+        )
+
     return business_form(
         request,
         form=form,
         title="核对到货并为订单备货",
         intro=f"{item.order.customer_name} · {item.order.number} · 当前缺 {item.shortage_qty} 件。",
-        save=lambda data: reserve_purchase_receipt(
-            actor=request.user, receipt_id=receipt.pk, request_id=request.request_id, **data
-        ),
+        save=save,
         destination=lambda result: reverse("order-detail", args=[result["order_id"]]),
         back_url=reverse("purchase-detail", args=[receipt.purchase_id]),
         template_name="procurement/allocate.html",

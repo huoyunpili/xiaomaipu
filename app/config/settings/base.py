@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "app.importing",
     "app.insights",
     "app.integrations",
+    "app.operations",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

@@ -1,0 +1,10 @@
+{% load money %}<section class="card"><h2>钱货统一进度</h2>
+{% if progress.object_type == 'purchase' %}
+<p>货：待发 {{ progress.unshipped_qty }} · 在途 {{ progress.in_transit_qty }} · 实收 {{ progress.arrived_qty }} · 待验 {{ progress.awaiting_inspection_qty }} · 合格 {{ progress.accepted_qty }}</p>
+<p>钱：仍应付供应商 ¥{{ progress.payable_fen|yuan }}{% if progress.refund_due_fen %} · 待供应商退 ¥{{ progress.refund_due_fen|yuan }}{% endif %}</p>
+{% if progress.legacy_logistics or progress.unmatched_qty %}<p class="warning">存在历史或到货来源未知，先核对资料再处理余额。</p>{% endif %}
+{% else %}
+<p>货：需求 {{ progress.demand_qty }} · 已锁 {{ progress.reserved_qty }} · 已发 {{ progress.shipped_qty }} · 待发 {{ progress.unshipped_qty }}</p>
+<p>钱：调整后应收 ¥{{ progress.due_fen|yuan }} · 实际净收 ¥{{ progress.cash_received_fen|yuan }} · 当前待核对 ¥{{ progress.outstanding_fen|yuan }}</p>
+{% if progress.platform_payment_known %}<p>已保存客户平台付款依据；托管款仍不等于卖家到账。</p>{% endif %}
+{% endif %}</section>

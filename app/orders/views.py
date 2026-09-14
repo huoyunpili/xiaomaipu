@@ -12,6 +12,7 @@ from app.common.forms import to_fen
 from app.evidence.models import EvidenceVideo
 from app.finance.services import record_customer_payment, record_money
 from app.inventory.models import StockLot
+from app.operations.projections import order_progress
 
 from .forms import (
     CancelRemainingForm,
@@ -60,6 +61,7 @@ def order_list(request):
 @require_GET
 def order_detail(request, order_id):
     order = get_object_or_404(SalesOrder.objects.select_related("channel"), pk=order_id)
+    progress = order_progress([order.pk])[0]
     return render(
         request,
         "orders/detail.html",
@@ -78,6 +80,7 @@ def order_detail(request, order_id):
             "events": order.events.all()[:50],
             "entries": order.money_entries.all()[:50],
             "customer_payments": order.customer_payments.order_by("-created_at")[:50],
+            "progress": progress,
         },
     )
 
