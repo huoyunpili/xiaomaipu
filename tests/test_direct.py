@@ -42,6 +42,12 @@ def test_direct_delivery_has_no_stock_movement_and_return_can_restock(admin_user
     assert InventoryBalance.objects.get().on_hand_qty == 1
     purchase.refresh_from_db()
     assert purchase.direct_qty == 2 and purchase.pending_qty == 0
+    from tests.test_purchase_logistics import step
+
+    assert purchase.in_transit_qty == 2 and purchase.arrived_qty == 0
+    step(admin_user, purchase, "arrive", quantity=1, dispatch_id=purchase.dispatches.get().pk)
+    assert purchase.in_transit_qty == 1 and purchase.arrived_qty == 1
+    assert StockMovement.objects.count() == before
     action(admin_user, order, "ship", quantity=1, delivery_method="HANDOVER")
     action(admin_user, order, "complete")
     money(admin_user, order, "RECEIPT", 60000)

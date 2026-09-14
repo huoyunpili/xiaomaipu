@@ -71,6 +71,11 @@ urlpatterns = [
         {"operation": "return"},
         name="purchase-return",
     ),
+    path(
+        "purchases/<uuid:purchase_id>/logistics/<str:operation>/",
+        procurement_views.purchase_logistics,
+        name="purchase-logistics",
+    ),
     path("purchases/", procurement_views.purchase_list, name="purchase-list"),
     path("purchases/new/", procurement_views.purchase_new, name="purchase-new"),
     path(

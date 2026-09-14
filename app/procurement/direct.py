@@ -6,7 +6,7 @@ from app.finance.models import MoneyEntry
 from app.orders.models import OrderItem, Reservation, SalesOrder, Shipment
 from app.orders.services import event, refresh_profit
 
-from .models import Purchase, PurchaseEvent
+from .models import Purchase, PurchaseDispatch, PurchaseEvent
 
 
 def dispatch_direct(
@@ -19,6 +19,8 @@ def dispatch_direct(
     quantity,
     carrier,
     tracking_no,
+    occurred_at=None,
+    expected_arrival_at=None,
     fee_fen=0,
     evidence_note="",
     acknowledged=False,
@@ -26,6 +28,15 @@ def dispatch_direct(
     **condition,
 ):
     require_operator(actor)
+    from django.utils import timezone
+
+    for value in (occurred_at, expected_arrival_at):
+        if value is not None and timezone.is_naive(value):
+            raise BusinessError("业务时间必须包含时区。")
+    if occurred_at and occurred_at > timezone.now():
+        raise BusinessError("实际发货时间不能在未来。")
+    if occurred_at and expected_arrival_at and expected_arrival_at < occurred_at:
+        raise BusinessError("预计到货不能早于发货。")
     whole(quantity, "直发数量", 1)
     whole(fee_fen, "直发费用")
     if (
@@ -78,6 +89,16 @@ def dispatch_direct(
                 if field != "internal_notes"
             },
         )
+        PurchaseDispatch.objects.create(
+            purchase=purchase,
+            quantity=quantity,
+            customer=True,
+            shipment=shipment,
+            dispatched_at=occurred_at,
+            expected_arrival_at=expected_arrival_at,
+            carrier=carrier.strip(),
+            tracking_no=tracking_no.strip(),
+        )
         purchase.direct_qty += quantity
         purchase.shipped_qty += quantity
         purchase.version += 1
@@ -119,6 +140,8 @@ def dispatch_direct(
             quantity=quantity,
             carrier=carrier,
             tracking_no=tracking_no,
+            occurred_at=occurred_at.isoformat() if occurred_at else None,
+            expected_arrival_at=expected_arrival_at.isoformat() if expected_arrival_at else None,
             fee_fen=fee_fen,
             evidence_note=evidence_note,
             acknowledged=acknowledged,

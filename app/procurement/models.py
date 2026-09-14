@@ -33,6 +33,9 @@ class SupplierQuote(BaseModel, ConditionFields):
 
 
 class Purchase(BaseModel, ConditionFields):
+    promised_dispatch_at = models.DateTimeField(null=True, blank=True)
+    legacy_logistics = models.BooleanField(default=False)
+    rejected_returned_qty = models.PositiveIntegerField(default=0)
     direct = models.BooleanField(default=False)
     direct_qty = models.PositiveIntegerField(default=0)
     order_item = models.ForeignKey(
@@ -79,11 +82,8 @@ class Purchase(BaseModel, ConditionFields):
                 name="purchase_received_within_qty",
             ),
             models.CheckConstraint(
-                condition=models.Q(
-                    shipped_qty__gte=models.F("received_qty") + models.F("direct_qty")
-                )
-                & models.Q(shipped_qty__lte=models.F("quantity")),
-                name="purchase_shipped_range",
+                condition=models.Q(shipped_qty__lte=models.F("quantity")),
+                name="purchase_dispatched_within_qty",
             ),
             models.CheckConstraint(
                 condition=models.Q(paid_fen__gte=models.F("refunded_fen")),
@@ -93,7 +93,25 @@ class Purchase(BaseModel, ConditionFields):
 
     @property
     def pending_qty(self):
-        return self.quantity - self.received_qty - self.cancelled_qty - self.direct_qty
+        if self.direct:
+            return self.quantity - self.cancelled_qty - self.direct_qty
+        return max(self.quantity - self.cancelled_qty - self.arrived_qty, 0)
+
+    @property
+    def arrived_qty(self):
+        return sum(a.quantity for a in self.arrivals.all())
+
+    @property
+    def awaiting_inspection_qty(self):
+        return sum(a.quantity - a.inspected_qty for a in self.arrivals.all() if not a.customer)
+
+    @property
+    def unmatched_qty(self):
+        return sum(a.quantity for a in self.arrivals.all() if a.dispatch_id is None)
+
+    @property
+    def unshipped_qty(self):
+        return max(self.quantity - self.cancelled_qty - self.shipped_qty - self.unmatched_qty, 0)
 
     @property
     def unallocated_qty(self):
@@ -104,15 +122,18 @@ class Purchase(BaseModel, ConditionFields):
 
     @property
     def planned_qty(self):
-        return self.pending_qty + self.unallocated_qty
+        lost = sum(d.disposed_qty for d in self.dispatches.all())
+        return max(self.pending_qty - lost, 0) + self.awaiting_inspection_qty + self.unallocated_qty
 
     @property
     def in_transit_qty(self):
-        return 0 if self.closed else self.shipped_qty - self.received_qty - self.direct_qty
+        return sum(d.remaining_qty for d in self.dispatches.all())
 
     @property
     def total_fen(self):
-        return (self.quantity - self.cancelled_qty - self.returned_qty) * self.unit_cost_fen
+        return (
+            self.quantity - self.cancelled_qty - self.returned_qty - self.rejected_returned_qty
+        ) * self.unit_cost_fen
 
     @property
     def net_paid_fen(self):
@@ -128,6 +149,12 @@ class Purchase(BaseModel, ConditionFields):
 
     @property
     def status_label(self):
+        if self.legacy_logistics:
+            return "历史发运待核对"
+        if self.awaiting_inspection_qty:
+            return "到货待验收"
+        if self.in_transit_qty:
+            return "部分在途" if self.arrived_qty else "运输中"
         if self.direct and self.direct_qty:
             return "供应商已直发" if not self.pending_qty else "部分已直发"
         if self.closed:
@@ -171,3 +198,120 @@ class PurchaseEvent(BaseModel):
 
     class Meta:
         ordering = ["-created_at", "id"]
+
+
+class PurchaseDispatch(BaseModel):
+    purchase = models.ForeignKey(Purchase, on_delete=models.PROTECT, related_name="dispatches")
+    quantity = models.PositiveIntegerField()
+    received_qty = models.PositiveIntegerField(default=0)
+    disposed_qty = models.PositiveIntegerField(default=0)
+    dispatched_at = models.DateTimeField(null=True, blank=True)
+    expected_arrival_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    carrier = models.CharField(max_length=100, blank=True)
+    tracking_no = models.CharField(max_length=100, blank=True)
+    customer = models.BooleanField(default=False)
+    shipment = models.OneToOneField(
+        "orders.Shipment", on_delete=models.PROTECT, null=True, blank=True
+    )
+    source = models.CharField(max_length=16, default="MANUAL")
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="dispatch_positive_qty"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    quantity__gte=models.F("received_qty") + models.F("disposed_qty")
+                ),
+                name="dispatch_quantity_balance",
+            ),
+        ]
+
+    @property
+    def remaining_qty(self):
+        return self.quantity - self.received_qty - self.disposed_qty
+
+    def __str__(self):
+        return f"{self.tracking_no or '未填运单'} · 待收 {self.remaining_qty} 件"
+
+
+class PurchaseArrival(BaseModel):
+    purchase = models.ForeignKey(Purchase, on_delete=models.PROTECT, related_name="arrivals")
+    dispatch = models.ForeignKey(
+        PurchaseDispatch, on_delete=models.PROTECT, null=True, blank=True, related_name="arrivals"
+    )
+    quantity = models.PositiveIntegerField()
+    inspected_qty = models.PositiveIntegerField(default=0)
+    rejected_qty = models.PositiveIntegerField(default=0)
+    rejected_returned_qty = models.PositiveIntegerField(default=0)
+    received_at = models.DateTimeField(null=True, blank=True)
+    customer = models.BooleanField(default=False)
+    source = models.CharField(max_length=16, default="MANUAL")
+
+    class Meta:
+        ordering = ["created_at", "id"]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(quantity__gt=0), name="arrival_positive_qty"),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gte=models.F("inspected_qty")),
+                name="arrival_inspection_balance",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(inspected_qty__gte=models.F("rejected_qty"))
+                & models.Q(rejected_qty__gte=models.F("rejected_returned_qty")),
+                name="arrival_reject_balance",
+            ),
+        ]
+
+    @property
+    def pending_qty(self):
+        return 0 if self.customer else self.quantity - self.inspected_qty
+
+    @property
+    def pending_return_qty(self):
+        return self.rejected_qty - self.rejected_returned_qty
+
+    def __str__(self):
+        return f"收到 {self.quantity} 件 · 待验 {self.pending_qty} 件"
+
+
+class PurchaseInspection(BaseModel):
+    arrival = models.ForeignKey(
+        PurchaseArrival, on_delete=models.PROTECT, related_name="inspections"
+    )
+    quantity = models.PositiveIntegerField()
+    result = models.CharField(
+        max_length=12, choices=[("ACCEPT", "验收合格"), ("REJECT", "不合格待退供")]
+    )
+    inspected_at = models.DateTimeField(null=True, blank=True)
+    receipt = models.OneToOneField(
+        PurchaseReceipt, on_delete=models.PROTECT, null=True, blank=True, related_name="inspection"
+    )
+    reason = models.CharField(max_length=300)
+    source = models.CharField(max_length=16, default="MANUAL")
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="inspection_positive_qty"
+            )
+        ]
+
+
+class DispatchDisposition(BaseModel):
+    dispatch = models.ForeignKey(
+        PurchaseDispatch, on_delete=models.PROTECT, related_name="dispositions"
+    )
+    quantity = models.PositiveIntegerField()
+    reason = models.CharField(max_length=300)
+    occurred_at = models.DateTimeField(null=True, blank=True)
+    resolved = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0), name="disposition_positive_qty"
+            )
+        ]

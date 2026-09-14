@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 from app.accounts.policies import require_admin, require_operator
 from app.catalog.models import CONDITION_FIELDS, SKU
 from app.common.business import BusinessError, whole
@@ -87,6 +89,9 @@ def inspect_return(*, actor, submission_key, return_id, result, reason, request_
             lot = StockLot(
                 sku_id=balance.sku_id,
                 label="退货验收可售",
+                original_received_at=old_lot.original_received_at,
+                last_restocked_at=timezone.now(),
+                origin_lot=old_lot.origin_lot or old_lot,
                 supplier_name=old_lot.supplier_name,
                 unit_cost_fen=reservation.unit_cost_fen,
                 unit_freight_fen=reservation.unit_freight_fen,

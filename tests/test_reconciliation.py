@@ -14,11 +14,11 @@ def test_reconciles_partial_purchase_without_writes(admin_user, django_assert_nu
     operate(admin_user, purchase, "pay", amount_fen=1000)
     operate(admin_user, purchase, "receive", quantity=1)
     before = list(Purchase.objects.values())
-    with django_assert_num_queries(7):
+    with django_assert_num_queries(9):
         report = reconcile_current_data()
     assert report["differences"] == []
     assert report["totals"]["purchase_paid_fen"] == 1000
-    assert report["migration_gaps"]["purchases_with_unverified_dispatch_history"] == 1
+    assert report["migration_gaps"]["purchases_with_unverified_dispatch_history"] == 0
     assert list(Purchase.objects.values()) == before
 
 

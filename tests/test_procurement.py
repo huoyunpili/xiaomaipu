@@ -76,15 +76,13 @@ def test_partial_receipt_payment_close_refund_and_trace(admin_user):
     assert StockMovement.objects.get().reference_id == str(purchase.pk)
     with pytest.raises(BusinessError):
         operate(admin_user, purchase, "receive", quantity=3)
-    operate(admin_user, purchase, "close")
-    assert (purchase.pending_qty, purchase.in_transit_qty, purchase.refund_due_fen) == (0, 0, 21000)
+    with pytest.raises(BusinessError):
+        operate(admin_user, purchase, "close")
+    assert purchase.in_transit_qty == 2
     assert InventoryBalance.objects.get().available_qty == 1
-    with pytest.raises(BusinessError):
-        operate(admin_user, purchase, "receive", quantity=1)
-    operate(admin_user, purchase, "refund", amount_fen=21000)
-    assert purchase.refund_due_fen == 0 and purchase.net_paid_fen == 10500
-    with pytest.raises(BusinessError):
-        operate(admin_user, purchase, "refund", amount_fen=10501)
+    # All remaining goods have already been dispatched: cancellation cannot erase them.
+    operate(admin_user, purchase, "receive", quantity=2)
+    assert purchase.pending_qty == purchase.in_transit_qty == 0
 
 
 def test_receipt_idempotency_and_atomic_failure(admin_user):

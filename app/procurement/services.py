@@ -1,11 +1,9 @@
-from uuid import uuid5
-
 from app.accounts.policies import require_operator
 from app.catalog.models import CONDITION_FIELDS, SKU
 from app.common.business import BusinessError, record_event, whole
 from app.common.services import execute_once
-from app.inventory.models import InventoryBalance, StockLot, StockMovement
-from app.inventory.services import move_stock, receive_stock
+from app.inventory.models import InventoryBalance, StockLot
+from app.inventory.services import move_stock
 from app.orders.models import OrderItem, SalesOrder
 
 from .models import Purchase, PurchaseEvent, PurchaseReceipt, Supplier, SupplierQuote
@@ -176,6 +174,20 @@ def purchase_action(
     request_id="",
     **condition,
 ):
+    if operation in {"ship", "receive"}:
+        from .logistics import logistics_action
+
+        return logistics_action(
+            actor=actor,
+            submission_key=submission_key,
+            purchase_id=purchase_id,
+            version=version,
+            operation=operation,
+            quantity=quantity,
+            reason=reason,
+            request_id=request_id,
+            **condition,
+        )
     require_operator(actor)
     whole(quantity, "数量")
     whole(amount_fen, "金额")
@@ -183,6 +195,10 @@ def purchase_action(
         raise BusinessError("请填写操作说明。")
 
     def action():
+        original = Purchase.objects.select_related("order_item").get(pk=purchase_id)
+        if original.order_item_id:
+            assert original.order_item is not None
+            SalesOrder.objects.select_for_update().get(pk=original.order_item.order_id)
         purchase = Purchase.objects.select_for_update().get(pk=purchase_id)
         event_receipt = None
         if purchase.version != version:
@@ -191,46 +207,6 @@ def purchase_action(
             if purchase.closed or purchase.ordered:
                 raise BusinessError("当前采购单不能再次下单。")
             purchase.ordered = True
-        elif operation in {"ship", "receive"}:
-            if purchase.direct:
-                raise BusinessError("这笔采购为供应商直发，请使用确认直发入口，不入自有库存。")
-            if not purchase.ordered or purchase.closed:
-                raise BusinessError("请先确认下单，已关闭的采购不能继续收货。")
-            whole(quantity, "本次数量", 1)
-            maximum = (
-                purchase.quantity - purchase.shipped_qty
-                if operation == "ship"
-                else purchase.pending_qty
-            )
-            if quantity > maximum:
-                raise BusinessError("本次数量超过采购单剩余数量。")
-            if operation == "ship":
-                purchase.shipped_qty += quantity
-            else:
-                result = receive_stock(
-                    actor=actor,
-                    submission_key=uuid5(submission_key, "receipt"),
-                    sku_id=purchase.sku_id,
-                    quantity=quantity,
-                    unit_cost_fen=purchase.unit_cost_fen,
-                    supplier_name=purchase.supplier_name,
-                    label=purchase.number,
-                    reason=reason,
-                    request_id=request_id,
-                    **{
-                        field: condition.get(field, getattr(purchase, field))
-                        for field in CONDITION_FIELDS
-                    },
-                )
-                new_receipt = PurchaseReceipt.objects.create(
-                    purchase=purchase, lot_id=result["lot_id"], quantity=quantity
-                )
-                event_receipt = new_receipt
-                StockMovement.objects.filter(lot_id=new_receipt.lot_id, kind="RECEIPT").update(
-                    reference_id=str(purchase.pk)
-                )
-                purchase.received_qty += quantity
-                purchase.shipped_qty = max(purchase.shipped_qty, purchase.received_qty)
         elif operation == "return":
             whole(quantity, "退回数量", 1)
             receipt = PurchaseReceipt.objects.filter(pk=receipt_id, purchase=purchase).first()
@@ -255,9 +231,11 @@ def purchase_action(
             purchase.returned_qty += quantity
             event_receipt = receipt
         elif operation == "close":
-            if purchase.closed or not purchase.pending_qty:
+            if purchase.legacy_logistics or purchase.unmatched_qty:
+                raise BusinessError("请先核对历史发运或未匹配到货，再关闭未发部分。")
+            if purchase.closed or not purchase.unshipped_qty:
                 raise BusinessError("采购单没有可关闭的剩余数量。")
-            purchase.cancelled_qty = purchase.pending_qty
+            purchase.cancelled_qty += purchase.unshipped_qty
             purchase.closed = True
         elif operation == "pay":
             whole(amount_fen, "付款金额", 1)

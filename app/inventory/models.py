@@ -24,6 +24,10 @@ class InventoryBalance(BaseModel):
 
 
 class StockLot(BaseModel, ConditionFields):
+    original_received_at = models.DateTimeField(null=True, blank=True)
+    last_restocked_at = models.DateTimeField(null=True, blank=True)
+    origin_lot = models.ForeignKey("self", on_delete=models.PROTECT, null=True, blank=True)
+
     @property
     def purchase_cost_fen(self):
         return self.unit_cost_fen + self.unit_freight_fen

@@ -7,7 +7,13 @@ from uuid import UUID
 from app.finance.models import MoneyEntry
 from app.inventory.models import InventoryBalance, StockLot
 from app.orders.models import SalesOrder
-from app.procurement.models import Purchase, PurchaseEvent, PurchaseReceipt
+from app.procurement.models import (
+    Purchase,
+    PurchaseArrival,
+    PurchaseDispatch,
+    PurchaseEvent,
+    PurchaseReceipt,
+)
 
 
 def reconcile_current_data():
@@ -59,6 +65,7 @@ def reconcile_current_data():
             "direct_qty",
             "closed",
             "shipped_qty",
+            "legacy_logistics",
         )
     )
     for row in purchases:
@@ -68,7 +75,9 @@ def reconcile_current_data():
             compare("purchase", row["id"], field, row[field], receipts[row["id"], field])
 
     stock: Counter[tuple[UUID, str]] = Counter()
-    lots = list(StockLot.objects.values("sku_id", "on_hand_qty", "reserved_qty"))
+    lots = list(
+        StockLot.objects.values("sku_id", "on_hand_qty", "reserved_qty", "original_received_at")
+    )
     for row in lots:
         for field in ("on_hand_qty", "reserved_qty"):
             stock[row["sku_id"], field] += row[field]
@@ -89,17 +98,28 @@ def reconcile_current_data():
         "on_hand_qty": sum(row["on_hand_qty"] for row in balances),
         "reserved_qty": sum(row["reserved_qty"] for row in balances),
     }
+    customer_arrivals: Counter[UUID] = Counter()
+    for row in PurchaseArrival.objects.filter(customer=True).values("purchase_id", "quantity"):
+        customer_arrivals[row["purchase_id"]] += row["quantity"]
+    outstanding: Counter[UUID] = Counter()
+    for row in PurchaseDispatch.objects.values(
+        "purchase_id", "quantity", "received_qty", "disposed_qty"
+    ):
+        outstanding[row["purchase_id"]] += (
+            row["quantity"] - row["received_qty"] - row["disposed_qty"]
+        )
     report["migration_gaps"] = {
         "purchases_with_unverified_dispatch_history": sum(
-            row["shipped_qty"] > 0 for row in purchases
+            row["legacy_logistics"] for row in purchases
         ),
         "direct_purchases_without_independent_arrival": sum(
-            row["direct_qty"] > 0 for row in purchases
+            row["direct_qty"] > customer_arrivals[row["id"]] for row in purchases
         ),
         "closed_purchases_with_unresolved_dispatch_balance": sum(
-            row["closed"] and row["shipped_qty"] > row["received_qty"] + row["direct_qty"]
-            for row in purchases
+            row["closed"] and outstanding[row["id"]] > 0 for row in purchases
         ),
-        "lots_without_original_business_time": len(lots),
+        "lots_without_original_business_time": sum(
+            row["original_received_at"] is None for row in lots
+        ),
     }
     return report

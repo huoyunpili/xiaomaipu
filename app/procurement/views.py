@@ -187,6 +187,8 @@ def purchase_detail(request, purchase_id):
             "purchase": purchase,
             "receipts": purchase.receipts.select_related("lot"),
             "events": purchase.events.all()[:100],
+            "dispatches": purchase.dispatches.prefetch_related("dispositions"),
+            "arrivals": purchase.arrivals.prefetch_related("inspections"),
         },
     )
 
@@ -314,7 +316,7 @@ def purchase_operate(request, purchase_id, operation, receipt_id=None):
     elif operation == "return":
         intro += "退回的货将扣减可售库存和采购应付，原记录保留；供应商实际退款到账后再登记退款。"
     elif operation == "close":
-        intro += "确认剩余货物不再收货后关闭；已收到的库存保留，已付款需另行登记实际退款。"
+        intro += "仅关闭尚未发出的数量；已发在途仍需收货或处置，已付款需另行登记实际退款。"
     elif operation in {"pay", "refund"}:
         intro += "只登记实际发生的资金，不会发起转账。"
     return business_form(
@@ -322,6 +324,68 @@ def purchase_operate(request, purchase_id, operation, receipt_id=None):
         form=form,
         title=titles[operation],
         intro=intro,
+        save=save,
+        destination=lambda result: reverse("purchase-detail", args=[purchase.pk]),
+        back_url=reverse("purchase-detail", args=[purchase.pk]),
+        button=titles[operation],
+    )
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def purchase_logistics(request, purchase_id, operation):
+    from .forms import LogisticsForm
+    from .logistics import logistics_action
+
+    titles = {
+        "ship": "登记分批发运",
+        "arrive": "登记实际收到",
+        "inspect": "验收入库",
+        "match": "核对到货来源",
+        "loss": "记录在途处置",
+        "reject_return": "登记不合格货已退供",
+        "promise": "维护约定发货时间",
+        "eta": "更新预计到货时间",
+        "source": "补录已核对到货来源",
+        "history_ship": "补记已核对历史发运",
+        "history_finish": "确认历史发运与未发关闭数量",
+    }
+    if operation not in titles:
+        raise Http404
+    purchase = get_object_or_404(Purchase, pk=purchase_id)
+    initial = {
+        "version": purchase.version,
+        **{field: getattr(purchase, field) for field in CONDITION_FIELDS},
+    }
+    if request.GET.get("arrival"):
+        initial["arrival"] = request.GET["arrival"]
+    if request.GET.get("dispatch"):
+        initial["dispatch"] = request.GET["dispatch"]
+    form = LogisticsForm(
+        request.POST if request.method == "POST" else None,
+        purchase=purchase,
+        operation=operation,
+        initial=initial,
+    )
+
+    def save(data):
+        for key in ("dispatch", "arrival"):
+            if key in data:
+                value = data.pop(key)
+                data[key + "_id"] = value.pk if value else None
+        return logistics_action(
+            actor=request.user,
+            purchase_id=purchase.pk,
+            operation=operation,
+            request_id=request.request_id,
+            **data,
+        )
+
+    return business_form(
+        request,
+        form=form,
+        title=titles[operation],
+        intro="收到与验收分别记录；只有合格验收才增加可售库存。处置或退供不代表已经收到退款。",
         save=save,
         destination=lambda result: reverse("purchase-detail", args=[purchase.pk]),
         back_url=reverse("purchase-detail", args=[purchase.pk]),

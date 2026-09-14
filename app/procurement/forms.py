@@ -76,6 +76,16 @@ class PurchaseReceiptForm(ConditionForm):
 
 
 class DirectDispatchForm(ConditionForm):
+    occurred_at = forms.DateTimeField(
+        label="实际发货时间（北京时间；未知可留空）",
+        required=False,
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
+    )
+    expected_arrival_at = forms.DateTimeField(
+        label="预计到货时间（选填）",
+        required=False,
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
+    )
     version = forms.IntegerField(widget=forms.HiddenInput)
     order_version = forms.IntegerField(widget=forms.HiddenInput)
     quantity = forms.IntegerField(label="本次直发数量", min_value=1, max_value=1000000)
@@ -84,3 +94,60 @@ class DirectDispatchForm(ConditionForm):
     fee = money_field("本次直发费用（元）", initial=0)
     evidence_note = forms.CharField(label="取证说明或未留证原因", max_length=300)
     acknowledged = forms.BooleanField(label="已核对供应商实际发出的货况与买家约定")
+
+
+class LogisticsForm(ConditionForm):
+    version = forms.IntegerField(widget=forms.HiddenInput)
+    reason = forms.CharField(label="实际依据 / 操作说明", max_length=300)
+
+    def __init__(self, *args, purchase, operation, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import PurchaseArrival, PurchaseDispatch
+
+        if operation != "inspect":
+            for field in list(self.fields):
+                if field not in {"submission_key", "version", "reason"}:
+                    del self.fields[field]
+        if operation not in {"promise", "eta"}:
+            self.fields["quantity"] = forms.IntegerField(
+                label="确认关闭的未发数量" if operation == "history_finish" else "本次数量",
+                min_value=0 if operation == "history_finish" else 1,
+                max_value=1000000,
+            )
+            self.fields["occurred_at"] = forms.DateTimeField(
+                label="实际发生时间（北京时间；未知可留空）",
+                required=False,
+                widget=forms.DateTimeInput(
+                    attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"
+                ),
+            )
+        if operation in {"ship", "history_ship", "source", "promise", "eta"}:
+            self.fields["expected_arrival_at"] = forms.DateTimeField(
+                label="约定发货时间" if operation == "promise" else "预计到货时间（选填）",
+                required=False,
+                widget=forms.DateTimeInput(
+                    attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"
+                ),
+            )
+        if operation in {"ship", "history_ship", "source"}:
+            self.fields["carrier"] = forms.CharField(
+                label="物流公司（选填）", max_length=100, required=False
+            )
+            self.fields["tracking_no"] = forms.CharField(
+                label="运单号（选填）", max_length=100, required=False
+            )
+        if operation in {"arrive", "match", "loss", "eta"}:
+            self.fields["dispatch"] = forms.ModelChoiceField(
+                label="来源发运批次（不清楚可留空待核对）",
+                queryset=PurchaseDispatch.objects.filter(purchase=purchase),
+                required=operation != "arrive" or purchase.direct,
+            )
+        if operation in {"inspect", "match", "reject_return", "source"}:
+            self.fields["arrival"] = forms.ModelChoiceField(
+                label="实际到货记录",
+                queryset=PurchaseArrival.objects.filter(purchase=purchase, customer=False),
+            )
+        if operation == "inspect":
+            self.fields["result"] = forms.ChoiceField(
+                label="验收结果", choices=[("ACCEPT", "合格入库"), ("REJECT", "不合格待退供")]
+            )
