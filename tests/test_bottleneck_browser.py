@@ -43,7 +43,8 @@ class TestBottleneckBrowser(StaticLiveServerTestCase):
             page.get_by_label("用户名").fill("bottleneck-owner")
             page.get_by_label("密码").fill("bottleneck-browser-only")
             page.get_by_role("button", name="登录", exact=True).click()
-            page.get_by_role("link", name="钱货卡点", exact=True).first.click()
+            # Legacy history remains reachable; it is no longer in the primary navigation.
+            page.goto(self.live_server_url + "/operations/")
             expect(page.get_by_role("heading", name="钱和货卡在哪里")).to_be_visible()
             expect(page.get_by_text("K6 售后钱货不同步：暂不可计算", exact=False)).to_be_visible()
             expect(page.get_by_text("K4 · 客户已付款，仍待发", exact=True)).to_be_visible()

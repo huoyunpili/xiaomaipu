@@ -1,0 +1,145 @@
+/* Personal UI Tokens v0.2 — neutral workspace theme, not an official Feishu export.
+ * Consume semantic/component tokens. Primitive values are maintained here only.
+ * Opt in on the document root: <html data-ui-theme="light">.
+ */
+:root[data-ui-theme="light"] {
+  /* Primitives */
+  --ui-white: #ffffff;
+  --ui-gray-50: #f7f8fa;
+  --ui-gray-100: #f2f3f5;
+  --ui-gray-200: #e4e7ed;
+  --ui-gray-400: #8f959e;
+  --ui-gray-500: #646a73;
+  --ui-gray-900: #1f2329;
+  --ui-blue-50: #eef3ff;
+  --ui-blue-500: #3370ff;
+  --ui-blue-600: #245bdb;
+  --ui-blue-700: #1c48b0;
+  --ui-green-50: #eaf6ef;
+  --ui-green-700: #237b4b;
+  --ui-amber-50: #fff5e5;
+  --ui-amber-800: #8a5300;
+  --ui-red-50: #fff0ef;
+  --ui-red-700: #c03430;
+  --ui-space-0: 0;
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 20px;
+  --ui-space-6: 24px;
+  --ui-space-8: 32px;
+  --ui-space-10: 40px;
+  --ui-space-12: 48px;
+  --ui-radius-0: 0;
+  --ui-radius-1: 4px;
+  --ui-radius-2: 6px;
+  --ui-radius-3: 8px;
+  --ui-radius-4: 12px;
+  --ui-radius-full: 9999px;
+
+  /* Semantic colors */
+  --ui-color-brand: var(--ui-blue-500);
+  --ui-color-action: var(--ui-blue-600);
+  --ui-color-action-hover: var(--ui-blue-700);
+  --ui-color-action-active: #173b91;
+  --ui-color-on-action: var(--ui-white);
+  --ui-color-text-primary: var(--ui-gray-900);
+  --ui-color-text-secondary: var(--ui-gray-500);
+  --ui-color-text-disabled: var(--ui-gray-400);
+  --ui-color-text-link: var(--ui-gray-900);
+  --ui-color-text-link-hover: var(--ui-gray-900);
+  --ui-color-bg-page: var(--ui-white);
+  --ui-color-bg-sidebar: var(--ui-gray-50);
+  --ui-color-nav-selected-bg: #e8eaed;
+  --ui-color-nav-selected-text: var(--ui-gray-900);
+  --ui-color-border-hover: #c5c9d0;
+  --ui-color-bg-surface: var(--ui-white);
+  --ui-color-bg-subtle: var(--ui-gray-100);
+  --ui-color-bg-hover: var(--ui-gray-100);
+  --ui-color-bg-selected: var(--ui-blue-50);
+  --ui-color-bg-disabled: var(--ui-gray-100);
+  --ui-color-border-subtle: var(--ui-gray-200);
+  --ui-color-border-control: var(--ui-gray-400);
+  --ui-color-focus: var(--ui-blue-600);
+  --ui-color-success-text: var(--ui-green-700);
+  --ui-color-success-bg: var(--ui-green-50);
+  --ui-color-warning-text: var(--ui-amber-800);
+  --ui-color-warning-bg: var(--ui-amber-50);
+  --ui-color-danger-text: var(--ui-red-700);
+  --ui-color-danger-bg: var(--ui-red-50);
+  --ui-color-info-text: var(--ui-blue-600);
+  --ui-color-info-bg: var(--ui-blue-50);
+  --ui-color-mask: rgb(31 35 41 / 40%);
+
+  /* Typography: use font-size and line-height as a pair. */
+  --ui-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --ui-font-size-caption: 12px;
+  --ui-line-height-caption: 18px;
+  --ui-font-size-body: 14px;
+  --ui-line-height-body: 22px;
+  --ui-font-size-subtitle: 16px;
+  --ui-line-height-subtitle: 24px;
+  --ui-font-size-title: 20px;
+  --ui-line-height-title: 28px;
+  --ui-font-size-page-title: 24px;
+  --ui-line-height-page-title: 32px;
+  --ui-font-weight-regular: 400;
+  --ui-font-weight-medium: 500;
+  --ui-font-weight-semibold: 600;
+  --ui-gap-inline: var(--ui-space-2);
+  --ui-gap-field: var(--ui-space-4);
+  --ui-gap-section: var(--ui-space-6);
+  --ui-page-padding: var(--ui-space-6);
+  --ui-control-height-sm: 28px;
+  --ui-control-height-md: 32px;
+  --ui-control-height-lg: 40px;
+  --ui-touch-target-min: 44px;
+  --ui-border-width: 1px;
+  --ui-focus-width: 2px;
+  --ui-focus-offset: 2px;
+  --ui-shadow-popover: 0 4px 16px rgb(31 35 41 / 12%);
+  --ui-shadow-dialog: 0 12px 40px rgb(31 35 41 / 18%);
+  --ui-z-dropdown: 100;
+  --ui-z-sticky: 200;
+  --ui-z-modal: 1000;
+  --ui-z-toast: 1100;
+  --ui-sidebar-width: 208px;
+  --ui-topbar-height: 56px;
+  --ui-content-max-width: 1440px;
+  --ui-motion-fast: 120ms;
+  --ui-motion-normal: 200ms;
+  --ui-motion-easing: cubic-bezier(.2, 0, 0, 1);
+
+  /* Components */
+  --ui-button-primary-bg: var(--ui-color-action);
+  --ui-button-primary-bg-hover: var(--ui-color-action-hover);
+  --ui-button-primary-bg-active: var(--ui-color-action-active);
+  --ui-button-primary-text: var(--ui-color-on-action);
+  --ui-button-height: var(--ui-control-height-md);
+  --ui-button-radius: var(--ui-radius-2);
+  --ui-button-padding-x: var(--ui-space-3);
+  --ui-input-height: var(--ui-control-height-md);
+  --ui-input-bg: var(--ui-color-bg-surface);
+  --ui-input-border: var(--ui-color-border-control);
+  --ui-input-border-error: var(--ui-color-danger-text);
+  --ui-input-radius: var(--ui-radius-2);
+  --ui-card-bg: var(--ui-color-bg-surface);
+  --ui-card-border: var(--ui-color-border-subtle);
+  --ui-card-radius: var(--ui-radius-3);
+  --ui-card-padding: var(--ui-space-5);
+  --ui-table-header-bg: var(--ui-color-bg-subtle);
+  --ui-table-row-bg-hover: var(--ui-color-bg-hover);
+  --ui-table-cell-padding-x: var(--ui-space-3);
+  --ui-table-cell-padding-y: var(--ui-space-3);
+  --ui-table-row-min-height: 44px;
+  --ui-dialog-radius: var(--ui-radius-4);
+  --ui-dialog-padding: var(--ui-space-6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-ui-theme="light"] {
+    --ui-motion-fast: 0ms;
+    --ui-motion-normal: 0ms;
+  }
+}

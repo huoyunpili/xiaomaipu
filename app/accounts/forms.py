@@ -22,6 +22,12 @@ class FirstOwnerForm(UserCreationForm):
 
 
 class AccountSettingsForm(forms.ModelForm):
+    current_password = forms.CharField(
+        label="当前密码（修改用户名或密码时填写）",
+        required=False,
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+    )
     password1 = forms.CharField(
         label="新密码（不修改请留空）",
         required=False,
@@ -44,6 +50,13 @@ class AccountSettingsForm(forms.ModelForm):
         cleaned = super().clean() or {}
         password1 = cleaned.get("password1")
         password2 = cleaned.get("password2")
+        if (
+            password1
+            or password2
+            or cleaned.get("username", self.instance.username) != self.instance.username
+        ):
+            if not self.instance.check_password(cleaned.get("current_password", "")):
+                self.add_error("current_password", "请输入正确的当前密码。")
         if password1 or password2:
             if password1 != password2:
                 self.add_error("password2", "两次输入的密码不一致。")

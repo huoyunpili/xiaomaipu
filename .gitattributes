@@ -1,0 +1,11 @@
+/.local export-ignore
+/.local-release export-ignore
+/release-data export-ignore
+/artifacts export-ignore
+/.venv export-ignore
+/private-media export-ignore
+/backups export-ignore
+/.env export-ignore
+/.env.local export-ignore
+/api_key.txt export-ignore
+/config.env export-ignore

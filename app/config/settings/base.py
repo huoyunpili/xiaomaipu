@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "app.insights",
     "app.integrations",
     "app.operations",
+    "app.workbench",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -99,6 +100,8 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_IGNORE_RESULT = True
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULE = {
+    "supplier-shipping": {"task": "app.workbench.tasks.poll_supplier_dispatches", "schedule": 30.0},
+    "cleanup-export-images": {"task": "app.workbench.tasks.cleanup_exports", "schedule": 86400.0},
     "xgj-poll": {"task": "app.integrations.tasks.poll_orders", "schedule": 300.0},
     "daily-market-intel": {"task": "app.insights.tasks.collect_market_intel", "schedule": 86400.0},
 }

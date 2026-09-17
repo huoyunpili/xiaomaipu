@@ -5,9 +5,12 @@ import subprocess
 import uuid
 from pathlib import Path
 
+import psycopg
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
+
+from app.common.backup import database_fingerprint
 
 
 class Command(BaseCommand):
@@ -15,14 +18,12 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--verify", action="store_true")
+        parser.add_argument("--output-dir", type=Path, help="Optional backup parent directory.")
 
     def handle(self, *args, **options):
         root = Path(settings.BASE_DIR)
-        backup = (
-            root
-            / ".local"
-            / "backups"
-            / (timezone.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:6])
+        backup = (options.get("output_dir") or root / ".local" / "backups") / (
+            timezone.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:6]
         )
         backup.mkdir(parents=True)
         database = settings.DATABASES["default"]
@@ -58,7 +59,7 @@ class Command(BaseCommand):
                     with target.open("rb") as copied, path.open("rb") as original:
                         digest = hashlib.file_digest(copied, "sha256").hexdigest()
                         if digest != hashlib.file_digest(original, "sha256").hexdigest():
-                            raise CommandError("视频备份校验失败。")
+                            raise CommandError("私有文件备份校验失败。")
                         files[str(relative)] = digest
         manifest = {
             "created_at": timezone.now().isoformat(),
@@ -112,6 +113,21 @@ class Command(BaseCommand):
                 if scalar(scratch, sql) != scalar(dbname, sql):
                     raise CommandError("恢复后的行数与源库不同，请暂停写入后重新校验。")
                 manifest["verified_tables"] = len(tables)
+                fingerprints = []
+                for name in (dbname, scratch):
+                    with psycopg.connect(
+                        dbname=str(name),
+                        user=str(username),
+                        password=str(database["PASSWORD"]),
+                        host=str(database["HOST"]),
+                        port=str(database["PORT"]),
+                    ) as verified_connection:
+                        with verified_connection.cursor() as cursor:
+                            fingerprints.append(database_fingerprint(cursor))
+                if fingerprints[0] != fingerprints[1]:
+                    raise CommandError("恢复后的字段内容与源库不同，请暂停写入后重新校验。")
+                manifest["content_verified"] = True
+                manifest["content_fingerprints"] = fingerprints[0]
                 manifest["restored"] = True
             finally:
                 run(["dropdb", "-U", username, scratch], stdout=subprocess.DEVNULL)

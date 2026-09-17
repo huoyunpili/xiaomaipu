@@ -106,12 +106,25 @@ def normalize(data):
             "sku_text",
         ):
             value = goods.get(key)
+            if key == "sku_text" and isinstance(value, str) and len(value) > 200:
+                raise APIError("平台型号规格超过当前字段长度，请先核对完整规格；未截断保存。")
             if isinstance(value, (str, int)) and not isinstance(value, bool) and str(value):
                 clean["goods"][key] = str(value)[:200]
         for key in ("quantity", "price"):
             value = goods.get(key)
             if type(value) is int and 0 <= value <= 10**12:
                 clean["goods"][key] = value
+        images = goods.get("images")
+        if isinstance(images, list):
+            valid_images = [
+                url
+                for url in images
+                if isinstance(url, str)
+                and url.startswith(("https://", "http://"))
+                and len(url) <= 1000
+            ][:20]
+            if valid_images:
+                clean["goods"]["images"] = valid_images
     return clean
 
 
@@ -231,8 +244,20 @@ def store_order(connection, data):
         candidate = {**row.snapshot, **clean}
         if "goods" in clean:
             candidate["goods"] = {**row.snapshot.get("goods", {}), **clean["goods"]}
-        if candidate != row.snapshot:
+        conflicts = any(
+            key in row.snapshot and row.snapshot[key] != value
+            for key, value in clean.items()
+            if key != "goods"
+        ) or any(
+            key in row.snapshot.get("goods", {}) and row.snapshot["goods"][key] != value
+            for key, value in clean.get("goods", {}).items()
+            if key != "images"
+        )
+        if conflicts:
             issues.append("同一更新时间返回不同内容，保留原版本并等待人工核对")
+        else:
+            # Detail responses may add facts omitted by the list at the same version.
+            row.snapshot = candidate
 
     scope_status, source_created_at, scope_reason = _scope(connection, row.snapshot)
     row.scope_status = scope_status
@@ -274,6 +299,9 @@ def store_order(connection, data):
         target_id=row.order_id,
         reason=reason,
     )
+    from app.workbench.services import project
+
+    project(row, data if not any("同一更新时间" in v for v in issues) else {})
     return row
 
 
@@ -358,8 +386,16 @@ def queue_sync(connection, *, full=False):
             active.save()
         return active
     now = int(now_dt.timestamp())
-    start = int(connection.sync_start_at.timestamp())
-    if start > now:
+    # Monthly reports need the entire connection month, including earlier settlements.
+    start = max(
+        0,
+        int(
+            _day_start(
+                connection.sync_start_at.astimezone(BEIJING).date().replace(day=1)
+            ).timestamp()
+        ),
+    )
+    if connection.sync_start_at > now_dt:
         raise APIError("自动同步起始日晚于当前时间，请核对电脑时间。")
     if not full and connection.cursor and now - connection.cursor > 179 * 86400:
         raise APIError("同步中断已超过平台查询时间范围，请先用表格补齐历史并重新核对。")
@@ -556,6 +592,7 @@ REFUND_NUMBER_FIELDS = (
     "timeout_time",
     "timeout_status",
     "timeout_type",
+    "reject_time",
 )
 REFUND_TEXT_FIELDS = (
     "refund_no",
@@ -579,6 +616,8 @@ def normalize_refund(data):
     clean: dict[str, Any] = {"order_no": order_no, "refund_no": refund_no[:120]}
     for key in REFUND_NUMBER_FIELDS:
         value = data.get(key)
+        if key == "timeout_type" and isinstance(value, str) and value.strip().isdigit():
+            value = int(value.strip())
         if value is not None:
             if type(value) is not int or not 0 <= value <= 10**12:
                 raise APIError("平台售后数字字段格式异常。")
@@ -646,6 +685,13 @@ def store_refund(connection, data):
         target_id=order.order_id,
         reason="；".join(issues) or "独立售后事实仅供核对；未自动退款、收货或改变库存。",
     )
+    if refund.source_updated >= order.refund_snapshot.get("update_time", 0):
+        order.refund_snapshot = {**refund.snapshot, "_needs_review": bool(issues)}
+        order.refund_checked_at = timezone.now()
+        order.save(update_fields=["refund_snapshot", "refund_checked_at"])
+        from app.workbench.services import project
+
+        project(order)
     return refund
 
 
@@ -661,6 +707,8 @@ def refresh_refund(*, actor, row_id, client=None):
     clean: dict[str, Any] = {}
     for key in REFUND_NUMBER_FIELDS:
         value = data.get(key)
+        if key == "timeout_type" and isinstance(value, str) and value.strip().isdigit():
+            value = int(value.strip())
         if value is not None:
             if type(value) is not int or not 0 <= value <= 10**12:
                 raise APIError("平台售后数字字段格式异常。")
@@ -669,13 +717,16 @@ def refresh_refund(*, actor, row_id, client=None):
         value = data.get(key)
         if isinstance(value, str) and value:
             clean[key] = value[:300]
-    row.refund_snapshot = {**row.refund_snapshot, **clean}
-    row.refund_checked_at = timezone.now()
-    row.needs_review = True
-    row.save()
     if data.get("refund_no") and data.get("update_time"):
         store_refund(row.connection, data)
+        row.refresh_from_db()
     else:
+        # Detail responses have no documented update_time. Treat the response as an
+        # observation now, without inventing an independent platform version.
+        row.refund_snapshot = clean
+        row.refund_checked_at = timezone.now()
+        row.needs_review = True
+        row.save()
         _save_application(
             connection=row.connection,
             fact_type="REFUND_SUMMARY",
@@ -688,4 +739,7 @@ def refresh_refund(*, actor, row_id, client=None):
             reason="售后详情缺少独立售后编号或更新时间，未自动建立售后业务单。",
         )
     record_event(actor, "xgj.refund_checked", row)
+    from app.workbench.services import project
+
+    project(row)
     return row

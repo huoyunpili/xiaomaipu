@@ -129,7 +129,7 @@ def test_settings_html_is_escaped_and_write_has_audit(client, admin_user, shop):
     data = {"name": "<script>alert(1)</script>", "version": 1, "submission_key": str(uuid.uuid4())}
     assert client.post("/settings/shop/", data).status_code == 302
     assert client.post("/settings/shop/", data).status_code == 302
-    response = client.get("/")
+    response = client.get("/settings/shop/")
     assert b"<script>alert(1)</script>" not in response.content
     assert b"&lt;script&gt;" in response.content
     assert AuditEvent.objects.get().request_id

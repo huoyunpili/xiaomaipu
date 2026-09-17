@@ -54,9 +54,10 @@ def test_dashboard_separates_cash_platform_payment_goods_and_supplier_balance(
     }
 
     client.force_login(admin_user)
-    page = client.get("/").content.decode()
-    assert "钱从客户流入，再向供应商流出" in page
-    assert "客户已付，不等同现金到账" in page
-    assert "平台订单待核对金额" in page
-    assert "货从供应商流入，再向客户流出" in page
-    assert "K1" in page and "K7" in page and "售后钱货不同步" in page
+    response = client.get("/")
+    page = response.content.decode()
+    assert "待发货" in page and "退款售后" in page and "今日预计利润" in page
+    # Legacy inventory/cash remain intact, but cannot inflate the new platform-order totals.
+    assert response.context["guarantee"] == 0
+    assert response.context["summary"]["profit"] == 0
+    assert "钱从客户流入，再向供应商流出" not in page

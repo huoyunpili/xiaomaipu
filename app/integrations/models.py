@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from django.db import models
+from django.utils import timezone
 
 from app.common.models import BaseModel
 
@@ -27,6 +30,16 @@ class Connection(BaseModel):
     @property
     def sync_ready(self):
         return self.sync_start_at is not None
+
+    @property
+    def sync_warning(self):
+        if not self.enabled:
+            return "自动同步已暂停，订单数量可能落后于平台，请到同步设置中恢复。"
+        if not self.last_success:
+            return "尚未成功同步，当前订单可能不完整，请检查同步任务。"
+        if timezone.now() - self.last_success > timedelta(minutes=10):
+            return "超过 10 分钟未成功同步，订单数量可能落后于平台。请立即同步；若任务一直等待，请检查后台同步服务。"
+        return ""
 
 
 class SyncRun(BaseModel):

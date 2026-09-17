@@ -1,0 +1,24 @@
+{% extends 'base.html' %}{% load workbench %}{% block content %}
+<div class="wb-heading"><div><p class="eyebrow">每日经营</p><h1>我的小卖铺</h1><p class="muted">先处理发货和退款，再看钱什么时候回来。</p></div><a class="button" href="{% url 'wb-shipping' %}">查看待发货 →</a></div>
+<div class="wb-metrics">
+<a class="wb-metric" href="{% url 'wb-shipping' %}"><span>待发货</span><strong>{{ shipping }} <small>单</small></strong><span>及时发给供应商</span></a>
+<a class="wb-metric" href="{% url 'wb-orders' %}?guarantee=1"><span>担保中金额</span><strong>¥{{ guarantee|money }}</strong><span>按订单推算 · {{ guarantee_count }} 单</span></a>
+<a class="wb-metric" href="{% url 'wb-refunds' %}"><span>退款处理中</span><strong>{{ refunds }} <small>单</small></strong><span>尚未完成退款 · 待处理</span></a>
+<a class="wb-metric" href="{% url 'wb-profits' %}?mode=expected&range=today"><span>今日预计利润</span><strong>¥{{ summary.profit|money }}</strong><span>{{ summary.missing }} 单待补成本</span></a>
+</div>
+<div class="wb-panel"><h2>回款安排</h2>
+<div class="wb-settlement-summary"><div><span class="muted">今日回款合计（已完成＋剩余预计）</span><a href="{% url 'wb-orders' %}?repayment=today"><strong>¥{{ today_repayment_amount|money }}</strong><span>{{ today_repayment_count }} 单 · 查看明细 →</span></a></div><p class="muted">已完成 ¥{{ completed_today_amount|money }} ＋ 剩余预计 ¥{{ today_due|money }}。按订单实付金额汇总；扣费后的实际到账金额与日期以平台资金账单为准。</p></div>
+<div class="wb-facts">
+<a href="{% url 'wb-orders' %}?status=COMPLETED&amp;date_field=completed&amp;start={{ today_date }}&amp;end={{ today_date }}">今日已完成回款（订单金额） <b>¥{{ completed_today_amount|money }}</b><span>{{ completed_today_count }} 单 · 按确认收货日期</span></a>
+<a href="{% url 'wb-pending' %}?due=today">今日剩余预计回款 <b>¥{{ today_due|money }}</b><span>{{ today_due_count }} 单 · 尚未完成</span></a>
+<a href="{% url 'wb-pending' %}?due=soon">未来三天预计回款（{{ soon_start|date:"m月d日" }}—{{ soon_end|date:"m月d日" }}） <b>¥{{ soon_due|money }}</b></a>
+<a href="{% url 'wb-refunds' %}">退款处理中金额 <b>¥{{ risk|money }}</b></a>
+</div><p class="muted">今日合计＝今日已回款＋今日预计待回款。预计回款按发货后 {{ reference_days }} 天计算；未来三天从明天起算。</p>
+{% if overdue %}<p class="wb-warning"><a href="{% url 'wb-pending' %}?due=overdue">{{ overdue|length }} 单 / ¥{{ overdue_amount|money }} 已过预计回款时间，但订单仍未完成</a>。发货已超过 {{ reference_days }} 天，请查看平台是否延长收货或尚未确认；这不代表平台资金逾期。</p>{% endif %}
+{% if unknown_due_count %}<p class="wb-warning"><a href="{% url 'wb-pending' %}?due=unknown">{{ unknown_due_count }} 单 / ¥{{ unknown_due_amount|money }} 缺少发货时间</a>，仍在待完成与担保金额中，暂不计入日期预测。</p>{% endif %}
+<p><a href="{% url 'wb-refunds' %}?refund_view=recovery">退货退款未追回货款：<strong>{% if recovery == None %}待补成本{% else %}¥{{ recovery|money }}{% endif %}</strong></a></p></div>
+{% if review_count %}<p class="wb-warning"><a href="{% url 'wb-orders' %}?status=REVIEW">{{ review_count }} 单待核对</a>，涉及已付款金额 ¥{{ review_paid_fen|money }}。这些订单尚未纳入担保和利润合计，请核对平台状态。</p>{% endif %}
+{% for b in stale_batches %}<div class="wb-warning"><a href="{% url 'wb-batch' b.pk %}">{{ b.supplier }} 的清单有订单变化：停止发货并联系供应商，核对后重新导出。</a>{% if b.batches|length > 1 %}<details><summary>查看相关清单（{{ b.batches|length }} 份）</summary><ul>{% for batch in b.batches %}<li><a href="{% url 'wb-batch' batch.pk %}">{{ batch.created_at|date:"m-d H:i" }} 导出的清单</a></li>{% endfor %}</ul></details>{% endif %}</div>{% endfor %}
+<div class="wb-panel"><h2>优先发货</h2>{% for t in waiting %}{% include 'workbench/order_card.html' %}{% empty %}<div class="wb-empty">▣<h3>当前没有待发货订单</h3><p>接入 API 后，新订单自动出现在这里。</p><a href="{% url 'xgj-home' %}">设置订单同步 →</a></div>{% endfor %}</div>
+{% include 'workbench/sync.html' %}
+{% endblock %}

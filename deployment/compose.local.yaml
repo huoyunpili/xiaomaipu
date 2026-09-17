@@ -14,13 +14,13 @@ x-app-environment: &app-environment
   DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-http://127.0.0.1:8765,http://localhost:8765}
   PRIVATE_MEDIA_ROOT: /srv/private-media
   LOCAL_BACKUP_ROOT: /srv/backups
-  RELEASE_VERSION: ${RELEASE_VERSION:-0.5.0-rc1}
+  RELEASE_VERSION: ${RELEASE_VERSION:-0.6.0-rc1}
   XGJ_APP_KEY: ${XGJ_APP_KEY:-}
   XGJ_APP_SECRET: ${XGJ_APP_SECRET:-}
   XGJ_BASE_URL: ${XGJ_BASE_URL:-}
 
 x-app: &app
-  image: ${APP_IMAGE:-xianyu-seller-local:0.5.0-rc1}
+  image: ${APP_IMAGE:-xianyu-seller-local:0.6.0-rc1}
   restart: unless-stopped
   environment: *app-environment
   depends_on:
@@ -69,8 +69,8 @@ services:
       context: ..
       dockerfile: deployment/Dockerfile
       args:
-        APP_VERSION: ${RELEASE_VERSION:-0.5.0-rc1}
-    command: ["gunicorn", "app.config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "300", "--access-logfile", "-"]
+        APP_VERSION: ${RELEASE_VERSION:-0.6.0-rc1}
+    command: ["gunicorn", "app.config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "300", "--access-logfile", "-", "--access-logformat", "status=%(s)s duration_ms=%(M)s"]
     volumes:
       - "${SELLER_DATA_DIR:?Set SELLER_DATA_DIR in config.env}/private-media:/srv/private-media"
       - "${SELLER_DATA_DIR:?Set SELLER_DATA_DIR in config.env}/backups:/srv/backups:ro"
@@ -95,7 +95,7 @@ services:
       - "${SELLER_DATA_DIR:?Set SELLER_DATA_DIR in config.env}/beat:/srv/beat"
 
   static:
-    image: ${APP_IMAGE:-xianyu-seller-local:0.5.0-rc1}
+    image: ${APP_IMAGE:-xianyu-seller-local:0.6.0-rc1}
     user: "0:0"
     command: ["sh", "-c", "cp -a /srv/app/staticfiles/. /srv/static/"]
     restart: "no"

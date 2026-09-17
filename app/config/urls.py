@@ -1,5 +1,5 @@
 from django.contrib.auth import views as auth_views
-from django.urls import path
+from django.urls import include, path
 
 from app.accounts.views import ThrottledLoginView, account_settings, first_owner_setup
 from app.catalog import views as catalog_views
@@ -15,8 +15,11 @@ from app.orders import views as order_views
 from app.procurement import views as procurement_views
 from app.shops.channel_views import channel_edit
 from app.shops.views import settings_view
+from app.workbench import views as workspace_views
 
 urlpatterns = [
+    path("supplier/", include("app.workbench.supplier_urls")),
+    path("workspace/", include("app.workbench.urls")),
     path("health/live/", views.health_live, name="health-live"),
     path("health/ready/", views.health_ready, name="health-ready"),
     path("operations/", operation_views.bottleneck_list, name="bottleneck-list"),
@@ -148,7 +151,7 @@ urlpatterns = [
         "returns/receive/<uuid:reservation_id>/", order_views.return_receive, name="return-receive"
     ),
     path("returns/inspect/<uuid:return_id>/", order_views.return_inspect, name="return-inspect"),
-    path("", views.dashboard, name="dashboard"),
+    path("", workspace_views.dashboard, name="dashboard"),
     path(
         "login/",
         ThrottledLoginView.as_view(),

@@ -91,7 +91,9 @@ def test_legacy_start_requires_one_fixed_admin_confirmation(admin_user, shop):
     )
     connection.refresh_from_db()
     original = connection.sync_start_at
-    assert queue_sync(connection).window_start == int(original.timestamp())
+    assert queue_sync(connection).window_start == int(
+        original.astimezone(BEIJING).replace(day=1).timestamp()
+    )
     with pytest.raises(BusinessError, match="已经固定"):
         confirm_sync_start(
             actor=admin_user,
@@ -134,7 +136,9 @@ def test_creation_scope_incremental_updates_and_rescan_boundary(admin_user, shop
         platform_data("1001", start_ts, start_ts + 86400, order_status=22),
     )
     assert PlatformOrder.objects.get(external_order_no="1001").source_updated == start_ts + 86400
-    assert queue_sync(connection, full=True).window_start == start_ts
+    assert queue_sync(connection, full=True).window_start == int(
+        start.astimezone(BEIJING).replace(day=1).timestamp()
+    )
 
 
 def test_manual_order_and_import_share_platform_identity(admin_user, shop):

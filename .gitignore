@@ -3,6 +3,12 @@
 .env.*
 !.env.example
 *.secret
+api_key.txt
+config.env
+private-media/
+backups/
+*.dump
+*.log
 
 # Probe output may contain business metadata
 scripts/xgj_probe/output/
@@ -28,3 +34,7 @@ release-data/
 .docx_work/
 .docx_qa/
 *.docx
+
+# One-off local source-editing helpers; not part of the application.
+/scripts/align_workspace.py
+/scripts/workspace_fixes.py

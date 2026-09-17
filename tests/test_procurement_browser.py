@@ -86,7 +86,7 @@ class TestProcurementBrowser(StaticLiveServerTestCase):
             page.get_by_label("用户名").fill("buyer-owner")
             page.get_by_label("密码").fill("purchase-browser-only")
             page.get_by_role("button", name="登录", exact=True).click()
-            page.get_by_role("link", name="采购", exact=True).click()
+            page.goto(self.live_server_url + "/purchases/")
             page.get_by_role("link", name="供应商与报价", exact=True).click()
             page.get_by_role("link", name="新增供应商", exact=True).click()
             page.get_by_label("供应商名称").fill("常用拿货人")

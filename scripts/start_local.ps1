@@ -31,4 +31,23 @@ foreach ($taskSpec in $taskSpecs) {
     $taskStarted += @{ name=$taskSpec.Name; pid=$taskProcess.Id }
 }
 $taskStarted | ConvertTo-Json | Set-Content -Encoding UTF8 -LiteralPath (Join-Path $taskLocal 'runtime.json')
+$taskDeadline = [DateTime]::UtcNow.AddSeconds(45)
+$taskReady = $false
+do {
+    foreach ($taskEntry in $taskStarted) {
+        if (-not (Get-Process -Id $taskEntry.pid -ErrorAction SilentlyContinue)) {
+            throw "Service $($taskEntry.name) exited; inspect .local/$($taskEntry.name).err.log."
+        }
+    }
+    try {
+        $taskWeb = Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 -Uri 'http://127.0.0.1:8765/health/ready/'
+        if ($taskWeb.StatusCode -eq 200) {
+            & $taskPython -m celery -A app.config.celery inspect ping --timeout=3 *> (Join-Path $taskLocal 'startup-worker-check.log')
+            if ($LASTEXITCODE -eq 0) { $taskReady = $true; break }
+        }
+    } catch {}
+    Start-Sleep -Seconds 1
+} while ([DateTime]::UtcNow -lt $taskDeadline)
+if (-not $taskReady) { throw 'Web or synchronization worker is not ready; inspect .local service logs.' }
+& (Join-Path $PSScriptRoot 'start_supplier.ps1')
 $taskStarted | ConvertTo-Json

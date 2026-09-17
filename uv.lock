@@ -609,6 +609,15 @@ wheels = [
 ]
 
 [[package]]
+name = "waitress"
+version = "3.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/cb/04ddb054f45faa306a230769e868c28b8065ea196891f09004ebace5b184/waitress-3.0.2.tar.gz", hash = "sha256:682aaaf2af0c44ada4abfb70ded36393f0e307f4ab9456a215ce0020baefc31f", size = 179901, upload-time = "2024-11-16T20:02:35.195Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/57/a27182528c90ef38d82b636a11f606b0cbb0e17588ed205435f8affe3368/waitress-3.0.2-py3-none-any.whl", hash = "sha256:c56d67fd6e87c2ee598b76abdd4e96cfad1f24cacdea5078d382b1f9d7b5ed2e", size = 56232, upload-time = "2024-11-16T20:02:33.858Z" },
+]
+
+[[package]]
 name = "wcwidth"
 version = "0.8.3"
 source = { registry = "https://pypi.org/simple" }
@@ -619,7 +628,7 @@ wheels = [
 
 [[package]]
 name = "xianyu-seller-backoffice"
-version = "0.5.0rc1"
+version = "0.6.0rc1"
 source = { virtual = "." }
 dependencies = [
     { name = "celery", extra = ["redis"] },
@@ -629,6 +638,7 @@ dependencies = [
     { name = "psycopg", extra = ["binary"] },
     { name = "python-dotenv" },
     { name = "qrcode" },
+    { name = "waitress" },
 ]
 
 [package.dev-dependencies]
@@ -650,6 +660,7 @@ requires-dist = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2,<4" },
     { name = "python-dotenv", specifier = ">=1,<2" },
     { name = "qrcode", specifier = ">=8,<9" },
+    { name = "waitress", specifier = ">=3,<4" },
 ]
 
 [package.metadata.requires-dev]

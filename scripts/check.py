@@ -5,7 +5,14 @@ import subprocess
 import sys
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings.test")
-sources = ["app", "tests", "scripts/check.py", "scripts/xgj_probe/probe.py", "manage.py"]
+sources = [
+    "app",
+    "tests",
+    "scripts/check.py",
+    "scripts/verify_daily_release.py",
+    "scripts/xgj_probe/probe.py",
+    "manage.py",
+]
 commands = [
     ["-m", "ruff", "check", *sources],
     ["-m", "ruff", "format", "--check", *sources],

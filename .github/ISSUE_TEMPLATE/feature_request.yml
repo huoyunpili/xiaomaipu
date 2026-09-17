@@ -1,0 +1,18 @@
+﻿name: 功能建议
+description: 分享更适合小卖家的做法
+title: "[建议] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你遇到了什么经营问题？
+      description: 描述当前做法、重复劳动或容易出错的环节。
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: 希望怎样改善？
+      description: 可以描述理想操作流程，请使用虚构数据举例。
+    validations:
+      required: true

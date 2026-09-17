@@ -1,0 +1,2 @@
+<div class="wb-sync"><span>最近成功同步：{{ connection.last_success|date:"Y-m-d H:i"|default:"尚未同步" }}</span><a href="{% url 'xgj-home' %}">同步设置</a>{% if connection %}<form method="post" action="{% url 'xgj-operate' 'sync' %}">{% csrf_token %}<button class="quiet">立即同步</button></form>{% endif %}</div>{% if connection.error %}<div class="wb-warning" role="alert">{{ connection.error }}</div>{% endif %}
+{% if connection.sync_warning %}<div class="wb-warning" role="alert">{{ connection.sync_warning }}</div>{% endif %}

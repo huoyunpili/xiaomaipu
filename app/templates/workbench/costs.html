@@ -1,0 +1,43 @@
+{% extends 'base.html' %}{% load workbench static assets %}{% block content %}
+<h1>商品成本与供应商</h1>
+<p>先核对图片与规格，再填写单件成本。同款同规格只需配置一次；已有订单成本快照保持不变。</p>
+<p class="muted">名称按平台返回内容显示。名称不完整时，可点击大图或查看关联订单确认商品。</p>
+{{ form.errors }}
+{% for p in products %}
+<form class="wb-panel wb-product-card" method="post" data-saved="{% if p.unit_fen != None %}true{% else %}false{% endif %}">{% csrf_token %}
+  <input type="hidden" name="product" value="{{ p.pk }}">
+  <div class="wb-product-heading">
+    <div class="wb-product-picture">
+      {% if p.image_trade_id %}
+      <a class="wb-thumb wb-product-thumb" href="{% url 'wb-product-image' p.image_trade_id %}" target="_blank" rel="noopener" aria-label="查看商品大图：{{ p.title }}">
+        <img src="{% url 'wb-product-image' p.image_trade_id %}" alt="{{ p.title }}" loading="lazy">
+      </a>
+      <a href="{% url 'wb-product-image' p.image_trade_id %}" target="_blank" rel="noopener">查看大图 ↗</a>
+      {% else %}<div class="wb-thumb wb-product-thumb"><span class="wb-image-message">暂无商品图</span></div>{% endif %}
+    </div>
+    <div class="wb-product-identity">
+      <h2>{{ p.title }}</h2>
+      {% if p.spec %}<p class="wb-product-spec">{{ p.spec }}</p>{% endif %}
+      <p data-condition-row {% if not p.display_condition %}hidden{% endif %}>成色：<strong data-product-condition>{{ p.display_condition }}</strong></p>
+      {% if p.sale_trade_id %}
+      <p>最近成交售价：<strong>¥{{ p.sale_paid_fen|unit_sale_price:p.sale_quantity }} / 件</strong></p>
+      <p class="muted">按实付折算 · {{ p.sale_quantity }} 件共 ¥{{ p.sale_paid_fen|money }} · {{ p.sale_paid_at|date:"m-d H:i" }} · <a href="{% url 'wb-detail' p.sale_trade_id %}" target="_blank" rel="noopener">查看售价对应订单 ↗</a></p>
+      {% else %}<p class="muted">售价：暂无已付款订单</p>{% endif %}
+      <p class="muted">成本版本 <span data-cost-version>{{ p.version }}</span>{% if p.example_trade_id %} · <a href="{% url 'wb-detail' p.example_trade_id %}" target="_blank" rel="noopener">查看关联订单 ↗</a>{% endif %}</p>
+    </div>
+  </div>
+  <div class="wb-product-fields">
+    <label>单件成本（元）<input name="cost" type="number" step="0.01" min="0" value="{{ p.unit_fen|money_input }}"></label>
+    <label>默认供应商<input name="supplier" value="{{ p.supplier }}" maxlength="100" list="saved-suppliers" autocomplete="off" placeholder="选择已有或输入新供应商"></label>
+    <label>供应商微信备注名称<input name="supplier_wechat" value="{{ p.supplier_wechat }}" maxlength="100"></label>
+    <label>默认发货备注<input name="shipping_note" value="{{ p.shipping_note }}" maxlength="1000"></label>
+  </div>
+  <div class="wb-product-actions">
+    <button type="submit" data-save-product aria-live="polite">保存</button>
+    <span class="wb-save-feedback" role="alert"></span>
+    <details><summary>成本变更记录</summary><div data-cost-history>{% for revision in p.revisions.all %}<p>版本 {{ revision.version }} · ¥{{ revision.unit_fen|money }} · {{ revision.effective_at|date:"Y-m-d H:i:s" }} 生效</p>{% empty %}<p>尚未设置成本。</p>{% endfor %}</div></details>
+  </div>
+</form>
+{% empty %}<div class="wb-empty">同步或导入订单后，商品类型会自动出现在这里。</div>{% endfor %}
+{% include 'workbench/supplier_choices.html' %}
+<script src="{% versioned_static 'workbench-costs.js' %}" defer></script>{% endblock %}

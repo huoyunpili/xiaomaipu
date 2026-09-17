@@ -46,7 +46,8 @@ def test_setup_closes_after_an_administrator_exists(client, admin_user):
     assert User.objects.count() == 1
 
 
-def test_unclaimed_development_owner_can_be_renamed_without_changing_identity(client):
+def test_unclaimed_development_owner_can_be_renamed_without_changing_identity(client, settings):
+    settings.DEBUG = True
     original = User.objects.create_superuser(
         "dev-owner", password="temporary-password-before-claim"
     )
@@ -78,6 +79,7 @@ def test_signed_in_user_can_choose_a_memorable_username_and_password(client, adm
         "/account/",
         {
             "username": "我的常用账号",
+            "current_password": "test-only-password",
             "display_name": "店主本人",
             "password1": "My-Memorable-Password-2026!",
             "password2": "My-Memorable-Password-2026!",

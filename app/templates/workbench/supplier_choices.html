@@ -1,0 +1,4 @@
+{% load static assets %}
+<datalist id="saved-suppliers">{% for supplier in supplier_choices %}<option value="{{ supplier.name }}">{{ supplier.wechat }}</option>{% endfor %}</datalist>
+{{ supplier_choices|json_script:"saved-supplier-contacts" }}
+<script src="{% versioned_static 'workbench-suppliers.js' %}" defer></script>

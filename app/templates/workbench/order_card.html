@@ -1,0 +1,14 @@
+{% load workbench %}<article class="wb-order">
+{% if selectable %}<input class="wb-check" aria-label="选择订单 {{ t.number }}" type="checkbox" name="selected" value="{{ t.pk }}">{% endif %}
+<a class="wb-thumb" href="{% url 'wb-detail' t.pk %}" aria-label="查看 {{ t.title }}">{% if t.image or t.platform_id %}<img src="{% url 'wb-product-image' t.pk %}" alt="{{ t.title }}" loading="lazy">{% else %}<span class="wb-image-message">暂无图片</span>{% endif %}</a>
+<div class="wb-order-main"><a href="{% url 'wb-detail' t.pk %}"><strong>{{ t.title|default:t.spec|default:"商品信息待补齐" }}</strong></a>{% if t.spec %}<p>{{ t.spec }}</p>{% endif %}{% if t.display_condition %}<p>成色：{{ t.display_condition }}</p>{% endif %}<p>{{ t.quantity }} 件 · {{ t.supplier|default:"待选供应商" }} · {{ t.receiver }}</p><small>{{ t.number }} · 付款 {{ t.paid_at|date:"m-d H:i"|default:"待核对" }}{% if t.paid_at %} · 已等待 {{ t.paid_at|timesince }}{% endif %}</small>{% if t.issue and t.issue != "暂停发货和回款参考" %}<p class="wb-alert">{{ t.issue }}</p>{% endif %}{% if t.reference_at %}<p>参考回款 {{ t.reference_at|date:"Y-m-d H:i" }}</p>{% endif %}{% if t.status == 'REFUNDING' %}<p class="wb-alert">{{ t.refund_progress|default:"退款处理中" }}</p>{% endif %}{% if t.status == 'REFUNDED' %}<p>客户退款已完成<span data-unrecovered-amount {% if t.recovered_at %}hidden{% endif %}> · 待追回货款：{% if t.cost_fen != None %}¥{{ t.cost_fen|money }}{% else %}待补成本{% endif %}</span></p>{% endif %}
+{% if t.status == 'REFUNDING' or t.status == 'REFUNDED' %}
+<p class="wb-recovery {% if t.recovered_at %}wb-recovery-recovered{% else %}wb-recovery-unrecovered{% endif %}">供应商货款：{% if t.recovered_at %}已追回（已收回）{% else %}未追回{% endif %}</p>
+{% if user.is_shop_admin %}<div class="wb-recovery-controls" data-recovery-url="{% url 'wb-recovery' t.pk %}" data-recovered="{% if t.recovered_at %}yes{% else %}no{% endif %}">
+{% csrf_token %}<label for="recovery-{{ t.pk }}">货款追回</label>
+<select id="recovery-{{ t.pk }}" aria-label="订单 {{ t.number }} 的货款追回状态"><option value="no" {% if not t.recovered_at %}selected{% endif %}>未追回</option><option value="yes" {% if t.recovered_at %}selected{% endif %}>已追回</option></select>
+<button type="button" data-save-recovery>确定</button><span data-recovery-feedback role="status" aria-live="polite"></span>
+</div>{% endif %}
+{% endif %}</div>
+<div class="wb-order-side"><span class="wb-badge {{ t.status }}">{{ t.get_status_display }}</span><strong>¥{{ t.paid_fen|money }}</strong><a href="{% url 'wb-detail' t.pk %}">查看 / 补充</a></div>
+</article>

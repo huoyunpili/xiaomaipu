@@ -39,8 +39,7 @@ class TestOperationsBrowser(StaticLiveServerTestCase):
             page.get_by_label("用户名").fill("ops-owner")
             page.get_by_label("密码").fill("ops-browser-only")
             page.get_by_role("button", name="登录", exact=True).click()
-            page.get_by_text("销售", exact=True).click()
-            page.get_by_role("link", name="客户", exact=True).click()
+            page.goto(self.live_server_url + "/customers/")
             page.get_by_role("link", name="新增客户", exact=True).click()
             page.get_by_label("客户称呼", exact=True).fill("复购客户")
             page.get_by_label("标签（自己写）").fill("熟客，可微信联系")
@@ -76,8 +75,7 @@ class TestOperationsBrowser(StaticLiveServerTestCase):
             page.wait_for_function("document.querySelector('video').readyState >= 2")
             assert video.evaluate("v => v.videoWidth") > 0
             page.screenshot(path=str(screenshots / "evidence-mobile.png"), full_page=True)
-            page.get_by_text("数据接入", exact=True).click()
-            page.get_by_role("link", name="历史数据导入", exact=True).click()
+            page.goto(self.live_server_url + "/imports/")
             raw = (
                 ",".join(HEADERS) + f"\nBROWSER-IMPORT,WECHAT,{sku.code},表格买家,1,88,\n"
             ).encode()

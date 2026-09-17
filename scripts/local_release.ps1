@@ -14,7 +14,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $env:COMPOSE_BAKE = 'false'
-$releaseVersion = '0.5.0-rc1'
+$releaseVersion = '0.6.0-rc1'
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $composeFile = Join-Path $projectRoot 'deployment/compose.local.yaml'
 $dataRoot = [IO.Path]::GetFullPath($DataDir)
@@ -128,7 +128,7 @@ function Compose-Text {
     if ($LASTEXITCODE) { throw "Docker Compose 命令失败：$($Arguments -join ' ')" }
     (($result | Out-String).Trim())
 }
-function Is-Running { -not [string]::IsNullOrWhiteSpace((Compose-Text ps --status running -q web)) }
+function Is-Running { -not [string]::IsNullOrWhiteSpace((Compose-Text ps --status running --quiet web)) }
 function Assert-Port {
     if (Is-Running) { return }
     $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Parse($script:config.BIND_ADDRESS),[int]$script:config.APP_PORT)
@@ -137,6 +137,7 @@ function Assert-Port {
 function Migrate {
     Compose run --rm -T web python manage.py migrate --noinput
     Compose run --rm -T web python manage.py bootstrap
+    Compose run --rm -T web python manage.py rebuild_workspace
     Compose run --rm -T web python manage.py check
 }
 function Wait-Ready {
@@ -145,13 +146,19 @@ function Wait-Ready {
     do {
         try {
             if ((Invoke-WebRequest -UseBasicParsing -TimeoutSec 5 -Uri $url).StatusCode -eq 200) {
+                foreach ($service in @('worker','beat')) {
+                    if ([string]::IsNullOrWhiteSpace((Compose-Text ps --status running --quiet $service))) {
+                        throw "后台服务未运行：$service"
+                    }
+                }
+                Compose exec -T worker celery -A app.config inspect ping --timeout=5
                 Write-Info "服务已就绪：$($script:config.PUBLIC_BASE_URL)"
                 return
             }
         } catch {}
         Start-Sleep -Seconds 2
     } while ([DateTime]::UtcNow -lt $deadline)
-    throw '服务未在两分钟内就绪，请运行 Status 并查看容器日志。'
+    throw '网页或后台同步服务未在两分钟内就绪，请运行 Status 并检查 web、worker、beat 日志。'
 }
 function Db-Counts([string]$Database) {
     $sql = "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename"
@@ -170,11 +177,18 @@ function Media-Hashes([string]$Root) {
     $hashes = [ordered]@{}
     if (Test-Path -LiteralPath $Root) {
         foreach ($file in Get-ChildItem -LiteralPath $Root -File -Recurse | Where-Object { -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) }) {
-            $relative = [IO.Path]::GetRelativePath($Root,$file.FullName).Replace([char]92,'/')
+            $rootPrefix = [IO.Path]::GetFullPath($Root).TrimEnd([char]92,[char]47) + [IO.Path]::DirectorySeparatorChar
+            if (-not $file.FullName.StartsWith($rootPrefix,[StringComparison]::OrdinalIgnoreCase)) { throw '附件路径越界。' }
+            $relative = $file.FullName.Substring($rootPrefix.Length).Replace([char]92,'/')
             $hashes[$relative] = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
         }
     }
     $hashes
+}
+function Db-Fingerprint([string]$Database) {
+    if ($Database -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') { throw '数据库名称无效。' }
+    $helper = Join-Path $projectRoot 'app/common/backup.py'
+    Compose-Text run --rm -T --no-deps --env "POSTGRES_DB=$Database" --volume "${helper}:/tmp/backup_fingerprint.py:ro" web python /tmp/backup_fingerprint.py
 }
 function Backup {
     Ensure-Config
@@ -202,17 +216,18 @@ function Backup {
         Compose exec -T postgres createdb --username $script:config.POSTGRES_USER $scratch
         try {
             Compose exec -T postgres pg_restore --username $script:config.POSTGRES_USER --dbname $scratch --exit-on-error --no-owner "/tmp/$dumpName"
-            $before = Db-Counts $script:config.POSTGRES_DB
-            $after = Db-Counts $scratch
-            if (($before | ConvertTo-Json -Compress) -ne ($after | ConvertTo-Json -Compress)) { throw '独立恢复库的逐表行数不一致。' }
+            $before = Db-Fingerprint $script:config.POSTGRES_DB
+            $after = Db-Fingerprint $scratch
+            if ($before -ne $after) { throw '独立恢复库的逐表内容不一致。' }
         } finally {
             Compose exec -T postgres dropdb --username $script:config.POSTGRES_USER --if-exists $scratch
         }
         $manifest = [ordered]@{
-            schema=1; created_at=[DateTimeOffset]::Now.ToString('o'); release_version=$script:config.RELEASE_VERSION
+            schema=2; created_at=[DateTimeOffset]::Now.ToString('o'); release_version=$script:config.RELEASE_VERSION
             database=$script:config.POSTGRES_DB
             dump_sha256=(Get-FileHash -LiteralPath (Join-Path $target 'database.dump') -Algorithm SHA256).Hash.ToLowerInvariant()
-            media_hashes=Media-Hashes $backupMedia; verified_tables=$before.Count; restored=$true; reconciliation_checked=$true
+            media_hashes=Media-Hashes $backupMedia; verified_tables=@(($before | ConvertFrom-Json).PSObject.Properties).Count; restored=$true; reconciliation_checked=$true
+            content_verified=$true; content_fingerprints=($before | ConvertFrom-Json)
         }
         $manifestJson = $manifest | ConvertTo-Json -Depth 8
         [IO.File]::WriteAllText(
@@ -260,8 +275,11 @@ function Restore {
     $manifestPath = Join-Path $selected 'manifest.json'
     $dumpPath = Join-Path $selected 'database.dump'
     if (-not (Test-Path -LiteralPath $manifestPath) -or -not (Test-Path -LiteralPath $dumpPath)) { throw '备份文件不完整。' }
-    $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
+    $manifest = Get-Content -Raw -Encoding UTF8 -LiteralPath $manifestPath | ConvertFrom-Json
     if ((Get-FileHash -LiteralPath $dumpPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $manifest.dump_sha256) { throw '备份哈希不匹配。' }
+    $expected = [ordered]@{}
+    foreach ($property in $manifest.media_hashes.PSObject.Properties) { $expected[$property.Name]=$property.Value }
+    if (((Media-Hashes (Join-Path $selected 'private-media')) | ConvertTo-Json -Compress) -ne ($expected | ConvertTo-Json -Compress)) { throw '备份附件哈希不一致，尚未覆盖当前数据。' }
     Write-Info '先为当前数据创建安全备份。'
     Backup | Out-Host
     $remoteDump = 'restore-' + (New-RandomHex 5) + '.dump'
@@ -274,6 +292,11 @@ function Restore {
         Compose exec -T postgres dropdb --username $script:config.POSTGRES_USER --if-exists $script:config.POSTGRES_DB
         Compose exec -T postgres createdb --username $script:config.POSTGRES_USER $script:config.POSTGRES_DB
         Compose exec -T postgres pg_restore --username $script:config.POSTGRES_USER --dbname $script:config.POSTGRES_DB --exit-on-error --no-owner "/tmp/$remoteDump"
+        if ($manifest.content_verified) {
+            $actualContent = (Db-Fingerprint $script:config.POSTGRES_DB) | ConvertFrom-Json | ConvertTo-Json -Depth 8 -Compress
+            $expectedContent = $manifest.content_fingerprints | ConvertTo-Json -Depth 8 -Compress
+            if ($actualContent -ne $expectedContent) { throw '恢复后的数据库内容摘要不一致。' }
+        }
         if (Test-Path -LiteralPath $mediaRoot) {
             Assert-Child $mediaRoot | Out-Null
             Remove-Item -LiteralPath $mediaRoot -Recurse -Force
@@ -327,7 +350,15 @@ switch ($Action) {
     }
     'Backup' { Backup | Out-Host }
     'Restore' { Restore }
-    'Upgrade' { Ensure-Config; Assert-Docker; if (Is-Running) { Backup | Out-Host }; Compose build --pull; Start-App }
+    'Upgrade' {
+        Ensure-Config; Assert-Docker
+        if ((Test-Path -LiteralPath (Join-Path $dataRoot 'postgres/PG_VERSION')) -or -not [string]::IsNullOrWhiteSpace((Compose-Text ps --all --quiet postgres))) { Backup | Out-Host }
+        $script:config.RELEASE_VERSION=$releaseVersion
+        $script:config.APP_IMAGE="xianyu-seller-local:$releaseVersion"
+        Save-Config
+        Compose build --pull
+        Start-App
+    }
     'Configure' {
         Ensure-Config
         $web = Get-WebConfig $PublicUrl $BindAddress $Port

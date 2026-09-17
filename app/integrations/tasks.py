@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from celery import shared_task
@@ -7,7 +8,9 @@ from django.utils import timezone
 
 from .client import APIError, XgjClient
 from .models import Connection, PushNotice, SyncRun
-from .services import execute_sync, queue_sync, store_order
+from .services import execute_sync, queue_sync, refresh_order, refresh_refund, store_order
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task(acks_late=True, reject_on_worker_lost=True)
@@ -23,6 +26,40 @@ def sync_orders(run_id):
     except Exception:
         # execute_sync only lets the current lease generation mark the run failed.
         raise
+    else:
+        if SyncRun.objects.filter(pk=run_id, status="DONE").exists():
+            enrich_synced_orders.delay(str(run_id))
+
+
+@shared_task(acks_late=True, reject_on_worker_lost=True)
+def enrich_synced_orders(run_id, attempt=0):
+    """List responses omit images, shipping times and refund type; fetch their details."""
+    from app.common.business import BusinessError
+    from app.workbench.models import Trade
+
+    run = SyncRun.objects.select_related("connection__actor").get(pk=run_id)
+    if run.status != "DONE":
+        return
+    failures = 0
+    trades = Trade.objects.filter(
+        platform__connection=run.connection,
+        platform__source_updated__gte=run.window_start,
+        platform__source_updated__lte=run.window_end,
+    ).select_related("platform__connection")
+    for trade in trades.iterator():
+        try:
+            row = refresh_order(trade.platform)
+            if (
+                row.snapshot.get("refund_status") in (1, 2, 3, 5, 6, 8)
+                or row.snapshot.get("order_status") == 23
+            ):
+                refresh_refund(actor=run.connection.actor, row_id=row.pk)
+        except (APIError, BusinessError):
+            failures += 1
+    if failures:
+        logger.warning("order_detail_enrichment_incomplete", extra={"failed_count": failures})
+        if attempt < 2:
+            enrich_synced_orders.apply_async(args=[str(run.pk), attempt + 1], countdown=60)
 
 
 def enqueue(run):

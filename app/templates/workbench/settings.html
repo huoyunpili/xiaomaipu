@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% block content %}<h1>设置</h1><p>经营数据保存在本机。</p><div class="wb-settings">
+<a class="wb-panel" href="{% url 'xgj-home' %}"><h2>↻ 闲管家 API</h2><p>连接店铺、同步起始日、运行记录</p></a>
+<a class="wb-panel" href="{% url 'wb-costs' %}"><h2>▣ 商品与供应商</h2><p>每种类型维护一次成本</p></a>
+<a class="wb-panel" href="{% url 'wb-history' %}"><h2>↓ 历史订单导入</h2><p>接入 API 之前的订单使用 CSV 导入</p></a>
+<a class="wb-panel" href="{% url 'account-settings' %}"><h2>◉ 我的账号</h2><p>修改自己的用户名和密码</p></a>
+<a class="wb-panel" href="{% url 'shop-settings' %}"><h2>⌂ 本地店铺与备份</h2><p>店铺资料、备份和恢复说明</p></a>
+<a class="wb-panel" href="{% url 'audit-list' %}"><h2>≡ 操作记录</h2><p>核对成本更正和售后处理记录</p></a></div>
+<section class="wb-panel"><h2>统一回款参考规则</h2><p>正常快递平台通用参考为发货后 10 天。调整后的日期仅作经营安排，不代表平台承诺；已完成订单仍以实际确认时间为准。</p><form method="post">{% csrf_token %}<input type="hidden" name="action" value="reference">{{ reference_form.as_p }}<button>保存回款参考规则</button></form></section>
+<section class="wb-panel"><h2>清单图片保管</h2><p>图片默认保存在本机私有目录，登录后才能下载。清理期限只作用于图片，不删除历史清单快照；已清理的图片可以从历史批次重新生成。</p><form method="post">{% csrf_token %}{{ retention_form.as_p }}<button>保存保管设置</button></form></section>
+<details class="wb-panel"><summary>旧版经营数据</summary><p>旧采购库存记录保留供回查。</p><a href="{% url 'order-list' %}">旧销售订单</a> · <a href="{% url 'purchase-list' %}">旧采购</a> · <a href="{% url 'product-list' %}">旧库存</a></details>{% endblock %}

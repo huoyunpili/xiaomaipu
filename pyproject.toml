@@ -1,6 +1,6 @@
 [project]
 name = "xianyu-seller-backoffice"
-version = "0.5.0rc1"
+version = "0.6.0rc1"
 description = "Single-shop seller backoffice"
 requires-python = ">=3.12,<3.14"
 dependencies = [
@@ -11,6 +11,7 @@ dependencies = [
   "python-dotenv>=1,<2",
   "qrcode>=8,<9",
   "openpyxl>=3.1,<4",
+  "waitress>=3,<4",
 ]
 
 [dependency-groups]

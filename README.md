@@ -1,124 +1,174 @@
-# 小卖铺经营后台
+﻿# 小卖铺 · 小卖家的本地经营后台
 
-## 0.5.0 RC1 本地发行候选
+**今天发哪些货、多少钱还在担保中、什么时候回款、退货的钱追回没有、这一单到底赚了多少。**
 
-本项目的成品形态是一套在使用者自己电脑上运行的单店后台，不要求云服务器。Windows 用户启动 Docker Desktop 后，可在项目根目录执行：
+小卖铺把这些日常问题放进一个工作台，面向经营闲鱼 / 鱼小铺的小卖家，尤其适合需要与供货商协作发货、逐单核对成本和利润的店主。经营数据和发货视频保存在你自己的电脑上。
 
-~~~powershell
-./scripts/local_release.ps1 -Action Install
-~~~
+当前为 **0.6.0 RC1 社区测试版**。源码公开，欢迎小卖家自用测试、提出问题和分享经营流程；使用范围见文末。项目独立开发，并非闲鱼、鱼小铺或闲管家官方产品。
 
-脚本会生成独立于源码的私有数据目录和随机密钥，使用 DEBUG=False、Gunicorn、Caddy、后台 Worker、Beat、内部 PostgreSQL 与 Redis。安装、API 配置、局域网、启停、升级、备份和恢复见 [本地发行与数据维护 0.5.0 RC1](docs/本地发行与数据维护-0.5.0-rc1.md)。
+[开始试用](#开始试用) · [发货与视频流程](docs/supplier-shipping.md) · [使用与反馈](CONTRIBUTING.md) · [提交问题](https://github.com/huoyunpili/xiaomaipu/issues/new/choose)
 
-2026-09-11 更新：当前为 **0.4.0 本地 API 接入查验版**，新增授权验证、后台增量同步、平台订单核对与销售草稿关联、推送接收、失败重试和登录限流。接入步骤、实测结果与上线边界见 [API 接入与发布查验](docs/API接入与发布查验-0.4.0.md)。下文 0.3.0 为原经营功能基线。
+## 五个值得试用的功能
 
-0.3.0 经营功能基线：已包含自由货况与库存、供应商报价及采购、缺货采购关联、供应商直发、分批发货与剩余数量关闭、收退款及利润、客户档案与风险提醒、私有视频取证、CSV/XLSX 后台导入、渠道报表和库存市场风险。详细查验步骤与边界见 [本地统一查验说明](docs/本地统一查验说明-0.3.0.md)。
+### 1. 打开工作台，先看清生意
 
-当前本机预览为 http://127.0.0.1:8765 ，继续使用原账号；启动说明中的 8000 端口用于新环境自行启动。
+待发货、待完成、担保金额、退款中的金额和利润集中展示。需要核对时可以进入订单明细，不必在多份表格里反复找订单。
 
-## 本轮可试用流程
+商品名称、规格、成色、图片和成本信息帮助你认出每一单；平台没有提供的信息不强行编造。同一供货商的历史清单变化合并提醒，减少重复打扰。
 
-1. 进入“货盘 → 新增商品”，一起填写名称、货况、库存数量和单件成本，点击“保存商品和库存”；暂时没货可填 0，其他描述仍选填。
-2. 同款增加另一组货时，在商品详情“新增一件/一组货”填写该组数量和实际货况，不同货况分别管理。
-3. 进入“订单 → 新增订单”，先选商品，再勾选货况卡片、填写数量/单价和买家/渠道；页面显示成交总额。也可在实物组点击“卖这组货”预选对应货物。保存后核对，草稿不锁库存。
-4. 确认订单后锁定现有库存；缺货时补货并再次“补锁库存”。闲鱼渠道需人工核对买家付款，确认后仍为平台托管。
-5. 点击“发货 / 交付”，填写本次发货数量、物流或选择自提/当面交付，确认本次实际费用。剩余数量可继续备货发货，各次运单分别保留；全部发出后确认快递履约完成。
-6. 分次登记实际到账；履约完成且净收款等于调整后应收时才确认利润，超收款不自动成为利润。
-7. 取消释放未出库库存；已收到的款项单独退回。退款与应收减免分开记录。
-8. 退货实际收到后登记待检；管理员验收可售后重新入库，报废不增加可售库存。退货不会自动触发现金退款。
+![工作台：订单、担保金额与回款安排](docs/images/dashboard.png)
 
-进货时只填单件进货成本，按实际记账金额录入，不单独填写采购运费。例如成交 200 元、进货成本 105 元、履约费用 10 元，最终利润为 85 元。若只收到 50 元，则仍待收 150 元，已实现利润显示待确认。
+*截图由独立测试数据库生成，均为虚构演示数据。*
 
-## 本地启动（Windows PowerShell）
+### 2. 回款安排，看清今天与接下来几天
 
-新增采购流程：进入“采购”，先建立供应商，再直接新增采购或按报价采购；确认下单后分次收货入库，实际付款与退款分别记录。缺货订单可点击“为缺货采购”，到货后核对实际货况并为原订单备货。详情见 [采购与供应商执行记录](docs/M4-采购与供应商执行记录.md) 和 [缺货采购关联记录](docs/M4-缺货采购关联执行记录.md)。已有环境更新后先执行 `python manage.py migrate`。
+- **今日合计**：今日已完成订单对应回款，加上今日预计待回款，避免重复计算。
+- **未来三天预计待回款**：从明天开始，展示接下来三天预计回款的未完成订单。
+- **统一参考规则**：默认按发货后 10 天估算，可在设置中调整。
 
-需要 Python 3.12 或 3.13、uv、Docker Compose v2。命令均在项目根目录执行。
+金额可以进入明细核对。这里的“已回款”依据平台订单完成状态统计，预计回款用于安排周转；实际账户入账以平台账单为准。
+
+### 3. 文字发货清单 → 供货商回传 → 平台发货 → 本地视频
+
+在待发货页勾选订单和供货商，支持多选，系统按供货商分别生成**可复制的文字清单和 TXT 文件**。商品、规格、数量与收货信息放在一起，方便沟通和填写快递单。
+
+供货商打开清单附带的专属链接后，可以：
+
+1. 查看本清单的商品、收货人、电话和地址，一键复制收货信息。
+2. 输入快递单号，系统按本地规则识别常见快递，供货商可核对和修改。
+3. 点击“保存单号并提交发货”，通过已授权的闲管家 API 向平台提交发货，并回查结果。
+4. 逐单上传发货前视频；可以先传一部分，之后继续补传。
+
+视频直接保存到店主电脑，按订单关联。在后台找到订单即可下载原视频，不用在聊天记录或硬盘文件夹里翻找。每个视频最多 60MB，每单最多 10 个；保存时校验完整性，同内容重传自动去重。
+
+<details>
+<summary>查看供货商手机端页面（虚构测试数据）</summary>
+
+<img src="docs/images/supplier-mobile.png" alt="供货商手机端：收货信息复制、快递单号和视频上传" width="360">
+
+</details>
+
+```mermaid
+flowchart LR
+    A[店主选择订单和供货商] --> B[复制文字清单与链接]
+    B --> C[供货商核对商品和收货信息]
+    C --> D[保存快递单号]
+    D --> E[闲管家 API 提交平台发货]
+    E --> F[回查并展示发货结果]
+    C --> G[逐单上传视频]
+    G --> H[店主电脑保存原视频]
+    H --> I[从订单详情查找与下载]
+```
+
+这个功能需要店主具备相应 API 权限、配置好默认发货地址，并运行公网入口。当前临时公网入口使用 Cloudflare Quick Tunnel；无需自有域名，但重建隧道会改变网址，需重新发送链接。供货商链接是访问凭证，请只发给对应供货商。
+
+> 当前已验证上传、隔离权限、重复提交防护及平台回查逻辑；尚未以真实包裹完成生产账号的发货闭环验收。首次使用请用一笔真实、已确认可发货的订单核对账号权限和平台结果。
+
+### 4. 客户退款后，别忘了追回供货商货款
+
+客户退款进度和供货商货款追回分开管理。在退货退款订单上，直接选择“未追回 / 已追回”并确认：未追回显示红色，已追回显示绿色。
+
+待追回金额聚焦**退货退款且尚未追回的货款**；成本未补齐时会提示，避免把未知金额当作 0。这是店主核对后的登记，不会代替你向供货商发起扣款或追偿。
+
+### 5. 利润不只给一个总数，把计算过程也展示出来
+
+支持按付款日期查看预计利润、按成交完成日期查看实际利润，选择今天、本月或自定义时间段，进入逐单明细并导出 CSV。
+
+```text
+商品成本 = 数量 × 单件成本
+当前平台费参考 = 客户实付 × 1.6%（逐单四舍五入到分）
+订单利润 = 客户实付 − 商品成本 − 平台费
+```
+
+例如客户实付 200 元，成本 150 元，按当前规则计算平台费 3.20 元，则订单利润为 **46.80 元**。缺少成本的订单单独列出，补齐后再纳入利润合计。退款售后的运费损失单列，便于核对。
+
+**1.6% 是当前版本内置口径，并非所有店铺的通用费率。** 若你的收费规则不同，请先核对并调整代码或反馈需求。利润统计不等同于完整财务报表，未自动计入税费、人工等其他经营开支。
+
+![利润统计与逐单计算](docs/images/profits.png)
+
+## 开始试用
+
+建议先用测试数据熟悉操作，再接入自己的订单。源码下载不会包含作者的账号、订单、API 密钥或经营视频。
+
+### 方式一：先试用经营后台
+
+适合先看订单、回款、退款和利润功能的 Windows 用户。准备 Docker Desktop，并启动它；下载完整项目后，在项目根目录打开 PowerShell：
+
+```powershell
+git clone https://github.com/huoyunpili/xiaomaipu.git
+cd xiaomaipu
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/local_release.ps1 -Action Install
+```
+
+打开 **http://127.0.0.1:8765**，首次访问创建自己的店主账号，没有默认账号密码。数据默认保存在 `%LOCALAPPDATA%/XianyuSeller`，源码更新与经营数据分开管理。
+
+没有 Git 也可以在仓库页面选择 **Code → Download ZIP**，解压完整源码后运行上述安装脚本。
+
+**这个 Docker 安装入口目前不包含供货商公网上传守护。** 要一起测试供货商回传，请使用下面的 Windows 源码启动方式。详细启停、API 配置、升级和备份恢复见 [本地安装与数据维护](docs/本地发行与数据维护-0.6.0-rc1.md)。
+
+### 方式二：测试完整供货商协作流程
+
+准备 Windows、Python 3.12 或 3.13、uv、Docker Desktop；在独立测试目录中：
 
 ```powershell
 uv sync --frozen
 docker compose -f deployment/compose.yaml up -d --wait
 uv run python manage.py migrate
 uv run python manage.py bootstrap
-uv run python manage.py createsuperuser
-uv run python manage.py runserver 127.0.0.1:8000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/start_local.ps1
 ```
 
-打开 http://127.0.0.1:8000 。管理员密码通过 Django 命令交互设置，没有默认账号密码。再次运行 bootstrap 不覆盖已有资料。不需接通闲管家 API 即可启动。
+浏览器打开 **http://127.0.0.1:8765** 创建店主账号。按 [.env.example](.env.example) 配置自己的闲管家 API，并在设置中验证连接和同步范围；不要提交实际配置文件。
 
-若 uv 安装在本项目虚拟环境内，可把 `uv` 替换为 `.\.venv\Scripts\uv.exe`，把 `uv run python` 替换为 `.\.venv\Scripts\python.exe`。
-
-默认 PostgreSQL：`127.0.0.1:55432`，开发库 `seller`，账号 `seller`，密码 `seller-local-only`；仅供本机开发。Redis 使用 `127.0.0.1:56379`。需要更改时复制 `.env.example` 为 `.env.local`，修改相应字段；Compose 使用 `--env-file .env.local` 保持配置一致。
-
-## 验证
-
-后台导入需要独立 Worker；每日公开信息读取需要 Beat。开发机可在另外两个终端运行：
+需要让供货商从外网进入时，将来自 [Cloudflare 官方发布](https://github.com/cloudflare/cloudflared/releases) 的 Windows 可执行文件放到 `.local/tools/cloudflared.exe`，然后执行：
 
 ```powershell
-.\.venv\Scripts\python.exe -m celery -A app.config.celery worker --pool=solo --concurrency=1 --loglevel=INFO
-.\.venv\Scripts\python.exe -m celery -A app.config.celery beat --schedule=.local/celerybeat-schedule --loglevel=INFO
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/start_supplier.ps1
 ```
 
-私有视频默认存放 `.local/private-media`，不提供公开静态链接。手机扫码需要手机可访问的站点地址，可用 `PUBLIC_BASE_URL` 配置实际局域网/HTTPS 地址，并同步配置允许的主机；当前 localhost 预览仅本机可访问。
+后台守护会检查专用上传服务，进程退出后尝试恢复；当前公网地址保存在 `.local/supplier-runtime.json`，同时写入后台配置。回到待发货页生成清单，复制其中的链接即可。电脑须保持开机、联网、不休眠；不要将管理后台的 8765 端口直接暴露到公网。
 
-本地 Docker 数据库与视频备份、独立恢复校验：
+这套方式用于当前社区测试；家用电脑长期部署还需要配置系统启动、备份和恢复验证，见 [上传服务运行说明](docs/supplier-service-operations.md)。不要同时启动两套使用相同端口的环境。
+
+## 适合谁，哪些地方还需要一起打磨
+
+适合经营单店、愿意维护商品成本、希望把订单与供货商协作放在一起的小卖家。当前以 Windows 本地部署为主要使用方式，尚不是注册即用的在线平台，也不是多店 SaaS。
+
+历史订单只能在接口能够提供或你已经取得可导入数据的前提下补入，系统不能自动获得未授权的历史订单。视频本地保存可以帮助整理证据，但不能保证纠纷处理结果。闲管家及其他外部服务的授权条件和费用由其提供方决定。
+
+我们特别期待这些反馈：
+
+- 某种订单状态没有识别正确，或展示金额与平台不一致。
+- 回款与利润的计算过程不够清楚。
+- 供货商用手机操作时遇到困难，或快递识别不准确。
+- 有更省步骤的发货、售后追款和对账方式。
+- 安装、迁移到家用电脑、备份恢复哪里容易出错。
+
+请通过 [Issues](https://github.com/huoyunpili/xiaomaipu/issues/new/choose) 提交复现步骤、期望结果和已脱敏截图。欢迎提交改进建议或 Pull Request，先阅读 [参与说明](CONTRIBUTING.md)。**不要公开订单号、收货地址、手机号、API 密钥、真实供货商访问链接或原始视频。**
+
+## 开发与验证
+
+技术栈：Django、PostgreSQL、Celery、Redis，服务端页面与原生 JavaScript；本地发行环境使用 Docker Compose，公网上传入口与管理后台分离。
 
 ```powershell
-.\.venv\Scripts\python.exe manage.py backup_local --verify
-```
-
-备份写入 `.local/backups`，恢复到新建的校验数据库，核对后删除校验库，不覆盖现有库。正式远端备份与生产灾备仍需部署环境配置。
-
-首次验证先执行 `uv run playwright install chromium`。本机已安装 Chrome 时也可设置 `$env:PLAYWRIGHT_CHANNEL='chrome'` 使用已有浏览器。
-
-```powershell
+uv run playwright install chromium
 uv run python scripts/check.py
 ```
 
-依次执行 Ruff 检查与格式校验、mypy、Django 系统检查、迁移漂移检查、pytest。测试使用独立 `test_seller` 数据库并自动清理；本地账号须具备创建测试数据库的权限。并发测试使用真实 PostgreSQL 连接。
+检查包含格式、静态类型、Django 配置、迁移一致性及自动化测试；浏览器回归覆盖桌面和手机页面。正式安装镜像及数据恢复有独立验证脚本。测试通过说明已覆盖场景符合预期，并不代表所有卖家账号和长期运行环境都已验收。
 
-首次迁移必须先执行，因为自定义用户从初始迁移开始使用。已有环境升级同样执行 `migrate`；`makemigrations --check --dry-run` 确保模型修改不会漏掉迁移文件。
+- [产品需求](PRD-闲鱼小卖家后台管理系统-MVP.md)
+- [技术实现](技术实现文档-闲鱼小卖家后台管理系统-MVP.md)
+- [发货、视频和接口边界](docs/supplier-shipping.md)
+- [快递识别规则](docs/courier-rules.md)
+- [回归与发布要求](docs/2026-09-16-regression-release.md)
 
-## 结构
+## 使用范围与版权
 
-- `app/accounts`：UUID 用户与管理员/操作员角色。
-- `app/shops`：单店铺约束、默认渠道及设置服务。
-- `app/common`：事务幂等、Outbox 存储、请求标识和健康检查。
-- `app/audit`：业务操作记录，无编辑删除入口。
-- `app/integrations`：闲管家只读客户端、增量同步、平台快照、销售草稿关联及签名推送。
-- `app/catalog`、`app/inventory`：自由货况、实物组、余额及库存流水。
-- `app/orders`、`app/finance`：订单动作、分配快照、收支及利润历史、退货验收。
-- `tests`：权限、重复提交、并发、回滚、转义与日志检查。
-- `deployment`：开发数据库及生产 Web/Worker/Beat/Caddy 骨架。
+Copyright © 2026 huoyunpili。保留其他未明确授予的权利。
 
-`/health/` 检查 Web 与数据库；Worker 可通过 `celery -A app.config.celery inspect ping` 检查。后台导入与每日 RSS 任务已启用，未配置/未启用的信息源不会联网。通用 Outbox 保留审计事件，外部业务消息发送未接入。
+本项目不采用 MIT、GPL 等标准开源许可证。作者允许小卖家下载、本地运行，并为**自己的小店后台**进行必要修改；欢迎按本仓库说明提交问题与改进。
 
-## 生产部署骨架
+未经作者另行许可，不得将本项目或其修改版出售、打包为商业产品、作为收费软件的一部分交付，或面向第三方提供收费托管服务。自己小店的日常经营使用属于上述允许范围，不因店铺有交易收入而被禁止。公开源码不表示授权上述商业再分发。
 
-生产云环境尚未部署，本地恢复演练已执行，生产备份与灰度验收仍需在实际部署环境执行。生产配置须提供 `DJANGO_SECRET_KEY`、`DJANGO_ALLOWED_HOSTS`、`POSTGRES_PASSWORD`、`SITE_DOMAIN` 和 HTTPS 的 `CSRF_TRUSTED_ORIGINS`，并设置 `APP_IMAGE=xianyu-seller:0.4.0`。私有视频使用持久化卷 `private_media`。
-
-```powershell
-docker compose --env-file .env.production -f deployment/compose.yaml -f deployment/compose.production.yaml build web
-docker compose --env-file .env.production -f deployment/compose.yaml -f deployment/compose.production.yaml up -d postgres redis
-docker compose --env-file .env.production -f deployment/compose.yaml -f deployment/compose.production.yaml run --rm web python manage.py check --deploy
-docker compose --env-file .env.production -f deployment/compose.yaml -f deployment/compose.production.yaml run --rm web python manage.py migrate
-docker compose --env-file .env.production -f deployment/compose.yaml -f deployment/compose.production.yaml run --rm web python manage.py bootstrap
-docker compose --env-file .env.production -f deployment/compose.yaml -f deployment/compose.production.yaml run --rm web python manage.py createsuperuser
-```
-
-启动前将镜像 `/srv/app/staticfiles/` 导出到项目 `staticfiles/` 供 Caddy 只读使用；执行 `up -d` 启动服务。数据库与 Redis 不映射生产端口，Web 只通过 Caddy 访问。登录限流已加入，首次外网使用前仍须配置运维备份并完成部署环境验收。
-
-回滚优先恢复前一应用镜像，不自动反向迁移或删除数据。0.2.0 增加独立业务表及订单规格快照，不改写已有用户和店铺；已有业务数据时不运行迁移至 zero，不执行 `docker compose down -v`。
-
-## API 验证
-
-自动化质量检查清空 API 凭据，不触发真实接口。本地已按用户授权启用每 5 分钟只读同步，管理员可在“平台同步”关闭。`sync_xgj --connect` 可验证并读取平台待核对记录；独立探针仍不连接经营数据库。生产接入须配置 `XGJ_APP_KEY` 和 `XGJ_APP_SECRET`。
-
-
-## 钱货迁移前的只读检查
-
-```powershell
-.\.venv\Scripts\python.exe manage.py reconcile_business_data --check
-```
-
-在只读一致快照中核对现有销售收退款、采购付款/收退记录和库存余额；有差额时非零退出，不自动修复。历史事实缺失单独列为迁移缺口，不代表完整业务审计。T0 基线、备份及后续迁移范围见 [T0 执行记录](docs/T0-基线与迁移准备.md)。
+第三方依赖和素材仍遵循各自许可证；测试视频来源见 [素材说明](tests/fixtures/README.md)。

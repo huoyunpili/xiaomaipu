@@ -1,4 +1,4 @@
-"""Read-only Xian Guanjia transport. Never expose signed URLs or response errors."""
+"""Xian Guanjia transport. Never expose signed URLs or response errors."""
 
 import hashlib
 import json
@@ -14,6 +14,10 @@ class APIError(Exception):
     def __init__(self, message, *, retryable=False):
         super().__init__(message)
         self.retryable = retryable
+
+
+class APIRejected(APIError):
+    """Platform explicitly rejected the operation with a nonzero business code."""
 
 
 BUSINESS_ERROR_MESSAGES = {
@@ -45,6 +49,8 @@ class XgjClient:
         "detail": "/api/open/order/detail",
         "refunds": "/api/open/trade/refund/list",
         "refund_detail": "/api/open/trade/refund/detail",
+        "ship": "/api/open/order/ship",
+        "express": "/api/open/express/companies",
     }
 
     def call(self, operation, body=None, seller=""):
@@ -93,7 +99,7 @@ class XgjClient:
             raise APIError("平台响应缺少结果代码。")
         if payload["code"] != 0:
             code = payload["code"]
-            raise APIError(
+            raise APIRejected(
                 BUSINESS_ERROR_MESSAGES.get(
                     code, f"闲管家接口返回错误 {code}，请检查店铺授权、套餐或接口权限。"
                 )

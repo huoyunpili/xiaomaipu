@@ -242,8 +242,8 @@ def test_platform_pages_show_actionable_orders_and_collapse_recovered_errors(
     connection.save()
     client.force_login(operator)
 
-    dashboard = client.get("/").content.decode()
-    assert "平台新订单" in dashboard and "测试商品" in dashboard and "123.45" in dashboard
+    workspace = client.get("/workspace/orders/").content.decode()
+    assert row.external_order_no in workspace and "测试商品" in workspace and "123.45" in workspace
 
     page = client.get("/integrations/xgj/").content.decode()
     assert "现在有什么数据" in page and "最近 20 次运行记录" in page

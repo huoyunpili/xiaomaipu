@@ -13,3 +13,14 @@ tests
 artifacts
 .local
 .uv-cache
+.local-release
+release-data
+private-media
+**/private-media
+backups
+**/backups
+**/api_key.txt
+**/config.env
+**/*.secret
+**/*.dump
+**/*.log

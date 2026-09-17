@@ -1,5 +1,7 @@
 from datetime import timedelta
+from unicodedata import normalize
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -20,28 +22,30 @@ from .models import LoginAttempt, User
 SETUP_LOCK_KEY = "first-owner-setup"
 
 
-def _active_administrators():
-    return User.objects.filter(is_active=True).filter(
-        Q(role=User.Role.ADMIN) | Q(is_superuser=True)
-    )
+def _administrators():
+    # A disabled administrator is still an existing owner, not a fresh installation.
+    return User.objects.filter(Q(role=User.Role.ADMIN) | Q(is_superuser=True))
 
 
 def _claimable_development_owner():
-    administrators = _active_administrators()
+    if not settings.DEBUG:
+        return None
+    administrators = _administrators()
     if administrators.count() != 1:
         return None
     owner = administrators.first()
-    if owner and owner.username == "dev-owner" and owner.last_login is None:
+    if owner and owner.is_active and owner.username == "dev-owner" and owner.last_login is None:
         return owner
     return None
 
 
 def first_owner_setup_available():
-    return not _active_administrators().exists() or _claimable_development_owner() is not None
+    return not _administrators().exists() or _claimable_development_owner() is not None
 
 
 class ThrottledLoginView(LoginView):
     template_name = "registration/login.html"
+    redirect_authenticated_user = True
 
     def dispatch(self, request, *args, **kwargs):
         if first_owner_setup_available():
@@ -50,7 +54,7 @@ class ThrottledLoginView(LoginView):
 
     def post(self, request, *args, **kwargs):
         now = timezone.now()
-        username = request.POST.get("username", "").strip().casefold()[:150]
+        username = normalize("NFKC", request.POST.get("username", "").strip()).casefold()[:150]
         address = request.META.get("REMOTE_ADDR", "")
         keys = [
             (salted_hmac("login-account", username, algorithm="sha256").hexdigest(), 10),
@@ -98,7 +102,7 @@ def first_owner_setup(request):
                 defaults={"expires_at": timezone.now() + timedelta(days=1)},
             )
             existing = _claimable_development_owner()
-            if _active_administrators().exists() and existing is None:
+            if _administrators().exists() and existing is None:
                 messages.error(request, "店主账号已经创建，请直接登录。")
                 return redirect("login")
             if existing is None:
