@@ -1,8 +1,17 @@
 ﻿# 页面截图来源
 
-这三张截图来自独立测试数据库的浏览器回归，生成于 2026-09-18。订单、客户、供货商和金额均为虚构测试数据，未使用真实经营数据库。
+这 7 张截图于 2026-09-18 使用当前版本的真实页面、样式和交互重新拍摄，由 Edge / Playwright 在独立演示数据库中生成。没有绘制替代界面或修改页面 DOM 伪造功能。
 
-- dashboard.png、profits.png：tests/test_workspace_browser.py
-- supplier-mobile.png：tests/test_supplier_browser.py
+交易、金额、供货商、收货人和地址均为虚构演示数据。商品缩略图来自现有商品素材，仅用于展示界面，相关权利归原权利人。截图不包含真实订单、客户联系方式、API 密钥或可用的供货商访问链接。
 
-再次发布前应重新生成并检查；不要用店主的真实订单截图替换这些图片。
+- dashboard-current.png：经营工作台，含今日和未来三天回款安排。
+- shipping-current.png：四笔待发货订单，按供货商选择导出。
+- shipping-list-current.png：可复制、可下载的文字发货清单。
+- supplier-current.png：手机端首笔订单，含收货信息、单号识别和视频保存结果。
+- supplier-desktop-current.png：同一上传流程的电脑端页面。
+- refunds-current.png：退款状态与已追回、未追回货款的对照。
+- profits-current.png：本月实际利润及展开的逐单计算过程。
+
+截图中的视频保存状态来自隔离环境中实际执行的示例视频上传；示例素材来源见 [测试素材说明](../../tests/fixtures/README.md)。截图过程禁止调用真实平台接口，不表示真实包裹已完成平台发货验收。
+
+再次发布前应使用最新界面重新拍摄，逐张检查图片加载、内容裁切和隐私信息。不要直接发布店主真实经营页面的截图。
