@@ -18,7 +18,7 @@
 
 ![工作台：订单、担保金额与回款安排](docs/images/dashboard-current.png)
 
-*以下截图于 2026-09-18 使用当前版本实际页面拍摄。交易、金额和收货信息为独立演示数据；商品图片用于展示界面，不包含真实客户资料。点击图片可查看大图。*
+*以下截图于 2026-09-18 拍摄自当前版本的实际经营页面，保留真实商品、金额和操作布局。客户姓名、电话、地址、订单号等隐私信息已做局部高斯模糊。点击图片可查看大图。*
 
 ### 2. 回款安排，看清今天与接下来几天
 
@@ -52,12 +52,12 @@
 
 **供货商手机端：复制收货信息，填写单号，逐单保存视频。**
 
-<img src="docs/images/supplier-current.png" alt="供货商手机页面：收货信息、单号识别与视频保存结果" width="360">
+<img src="docs/images/supplier-current.png" alt="供货商手机页面：复制收货信息、填写单号与上传视频，客户信息已模糊" width="360">
 
 <details>
 <summary>查看供货商电脑端页面</summary>
 
-![供货商电脑端：单号识别与视频保存结果](docs/images/supplier-desktop-current.png)
+![供货商电脑端：收货信息、快递单号与视频上传](docs/images/supplier-desktop-current.png)
 
 </details>
 
@@ -83,7 +83,7 @@ flowchart LR
 
 待追回金额聚焦**退货退款且尚未追回的货款**；成本未补齐时会提示，避免把未知金额当作 0。这是店主核对后的登记，不会代替你向供货商发起扣款或追偿。
 
-![退款售后：已追回绿色、未追回红色，直接选择并确认](docs/images/refunds-current.png)
+![退款售后：未追回货款与逐单追回状态登记](docs/images/refunds-current.png)
 
 ### 5. 利润不只给一个总数，把计算过程也展示出来
 
