@@ -14,8 +14,15 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U seller -d seller"
           --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:8.0.3-alpine
+        ports: ["56379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
     env:
       POSTGRES_PASSWORD: seller-ci-only
+      REDIS_URL: redis://127.0.0.1:56379/0
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
