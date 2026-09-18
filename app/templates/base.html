@@ -24,4 +24,4 @@
 <header class="workspace-topbar"><span>经营空间 <span class="breadcrumb-separator" aria-hidden="true">/</span> <strong>{% with current=request.resolver_match.url_name %}{% if current == 'dashboard' %}工作台{% elif current == 'wb-shipping' %}待发货{% elif current == 'wb-pending' %}待完成{% elif current == 'wb-refunds' %}退款售后{% elif current == 'wb-profits' %}利润统计{% elif current == 'wb-orders' %}全部订单{% elif current == 'wb-detail' %}订单详情{% elif current == 'wb-costs' %}商品成本与供应商{% elif current == 'wb-settings' %}设置{% else %}经营管理{% endif %}{% endwith %}</strong></span><span class="workspace-topbar-note">小卖铺 · 经营后台</span></header>
 {% else %}<header><a class="brand" href="{% url 'dashboard' %}">小卖铺 <span>经营后台</span></a></header>{% endif %}
 <main id="main-content" tabindex="-1">{% for message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</main>
-{% if not user.is_authenticated %}<footer>本地经营</footer>{% endif %}</body></html>
+<footer class="muted" style="padding:16px 24px;font-size:12px">小卖铺 · 作者：阿栋</footer></body></html>
