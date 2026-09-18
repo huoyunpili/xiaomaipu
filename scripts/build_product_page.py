@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 source = ROOT / "docs/product/index.html"
 page = source.read_text(encoding="utf-8")
+page = page.replace("../小卖铺使用与配置手册.html", "小卖铺使用与配置手册.html")
 for path in sorted((ROOT / "docs/product/images").glob("*-current.png")):
     encoded = base64.b64encode(path.read_bytes()).decode("ascii")
     page = page.replace(f"images/{path.name}", f"data:image/png;base64,{encoded}")
