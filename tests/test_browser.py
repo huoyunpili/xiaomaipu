@@ -31,7 +31,7 @@ class TestBrowser(StaticLiveServerTestCase):
             page.get_by_label("用户名").fill("browser-owner")
             page.get_by_label("密码").fill("browser-test-only")
             page.get_by_role("button", name="登录", exact=True).click()
-            expect(page.get_by_role("heading", name="我的小卖铺")).to_be_visible()
+            expect(page.get_by_role("heading", name="鱼管家")).to_be_visible()
             expect(page.get_by_role("heading", name="回款安排")).to_be_visible()
             expect(page.get_by_role("heading", name="优先发货")).to_be_visible()
             for label in ("工作台", "待发货", "待完成", "退款售后", "利润统计", "全部订单", "设置"):

@@ -18,7 +18,7 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
-        Shop.objects.get_or_create(is_active=True, defaults={"name": "我的小卖铺"})
+        Shop.objects.get_or_create(is_active=True, defaults={"name": "鱼管家"})
         for code, name in CHANNELS:
             SalesChannel.objects.get_or_create(
                 code=code, defaults={"name": name, "is_platform": code == "XIANYU"}

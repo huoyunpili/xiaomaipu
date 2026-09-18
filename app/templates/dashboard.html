@@ -1,5 +1,5 @@
 {% extends 'base.html' %}{% load money %}{% block content %}
-<div class="page-heading"><div><p class="eyebrow">经营总览</p><h1>{{ shop.name|default:'我的小卖铺' }}</h1><p class="muted">{{ user.display_name|default:user.username }}，这里先看钱在哪里、货在哪里，再处理卡住的业务。</p></div></div>
+<div class="page-heading"><div><p class="eyebrow">经营总览</p><h1>{{ shop.name|default:'鱼管家' }}</h1><p class="muted">{{ user.display_name|default:user.username }}，这里先看钱在哪里、货在哪里，再处理卡住的业务。</p></div></div>
 
 <section class="flow-section">
   <div class="section-heading"><div><p class="eyebrow">钱从客户流入，再向供应商流出</p><h2>钱款总览</h2></div><a href="{% url 'reports' %}">查看经营报表 →</a></div>

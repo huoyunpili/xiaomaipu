@@ -2,7 +2,7 @@
 
 维护源文件：`docs/manual/index.html`。
 
-对外阅读文件：`docs/小卖铺使用与配置手册.html`，样式和高清演示截图内嵌，可离线打开，支持目录、复制命令和打印。
+对外阅读文件：`docs/鱼管家使用与配置手册.html`，样式和高清演示截图内嵌，可离线打开，支持目录、复制命令和打印。
 
 构建：在项目根目录执行 `python scripts/build_manual.py`。截图引用 `docs/product/images` 中的演示素材，不包含真实客户资料或凭据。
 

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}{% load workbench %}{% block content %}
-<div class="wb-heading"><div><p class="eyebrow">每日经营</p><h1>我的小卖铺</h1><p class="muted">先处理发货和退款，再看钱什么时候回来。</p></div><a class="button" href="{% url 'wb-shipping' %}">查看待发货 →</a></div>
+<div class="wb-heading"><div><p class="eyebrow">每日经营</p><h1>鱼管家</h1><p class="muted">先处理发货和退款，再看钱什么时候回来。</p></div><a class="button" href="{% url 'wb-shipping' %}">查看待发货 →</a></div>
 <div class="wb-metrics">
 <a class="wb-metric" href="{% url 'wb-shipping' %}"><span>待发货</span><strong>{{ shipping }} <small>单</small></strong><span>及时发给供应商</span></a>
 <a class="wb-metric" href="{% url 'wb-orders' %}?guarantee=1"><span>担保中金额</span><strong>¥{{ guarantee|money }}</strong><span>按订单推算 · {{ guarantee_count }} 单</span></a>

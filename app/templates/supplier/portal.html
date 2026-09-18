@@ -1,5 +1,5 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>发货回传</title><link rel="stylesheet" href="{% url 'supplier-asset' 'supplier.css' %}"><script src="{% url 'supplier-asset' 'supplier.js' %}" defer></script></head><body><main>
-<header><p class="eyebrow">小卖铺 · 发货协作</p><h1>发货清单</h1><p>共 {{ items|length }} 单 · 可逐单保存，之后继续补传</p><p>视频保存到店主电脑。保存单号会直接提交闲鱼发货，请核对商品和单号后操作。</p><small>链接有效至 {{ access.expires_at|date:"Y-m-d" }}，请勿转发给无关人员。</small></header>
+<header><p class="eyebrow">鱼管家 · 发货协作</p><h1>发货清单</h1><p>共 {{ items|length }} 单 · 可逐单保存，之后继续补传</p><p>视频保存到店主电脑。保存单号会直接提交闲鱼发货，请核对商品和单号后操作。</p><small>链接有效至 {{ access.expires_at|date:"Y-m-d" }}，请勿转发给无关人员。</small></header>
 {% if error %}<p class="notice">{{ error }}</p>{% endif %}
 {% for item in items %}{% with t=item.trade d=item.dispatch %}<article data-order data-status-url="{% url 'supplier-status' access.token t.pk %}">
 <div class="product">{% if t.image %}<img src="{% url 'supplier-image' access.token t.pk %}" alt="商品图片" loading="lazy">{% endif %}<div><h2>{{ t.title }}</h2>{% if t.spec %}<p>{{ t.spec }}</p>{% endif %}<p>{{ t.quantity }} 件 · 订单尾号 {{ t.number|slice:'-6:' }}</p></div></div>

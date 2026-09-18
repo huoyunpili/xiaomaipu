@@ -37,7 +37,7 @@ def main():
             page.get_by_label("用户名").fill(credentials["username"])
             page.get_by_label("密码").fill(credentials["password"])
             page.get_by_role("button", name="登录", exact=True).click()
-        expect(page.get_by_role("heading", name="我的小卖铺")).to_be_visible()
+        expect(page.get_by_role("heading", name="鱼管家")).to_be_visible()
         page.goto(BASE + "/setup/")
         assert "/setup/" not in page.url
         for width, height in [(1365, 900), (390, 844)]:
