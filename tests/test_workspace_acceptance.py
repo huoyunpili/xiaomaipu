@@ -1,3 +1,4 @@
+from datetime import timedelta
 from io import StringIO
 from unittest.mock import patch
 
@@ -29,6 +30,11 @@ def test_dashboard_groups_changed_shipping_batches(connection, admin_user, clien
         )
         for supplier in ["供应商甲", "供应商甲", "供应商甲", "供应商乙"]
     ]
+    base_time = timezone.now()
+    for index, batch in enumerate(batches):
+        ExportBatch.objects.filter(pk=batch.pk).update(
+            created_at=base_time + timedelta(microseconds=index)
+        )
     client.force_login(admin_user)
     response = client.get(reverse("dashboard"))
     assert response.status_code == 200
