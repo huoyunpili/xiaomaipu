@@ -78,6 +78,9 @@ def home(request):
             "application_review_count": ExternalFactApplication.objects.filter(
                 result=ExternalFactApplication.Result.NEEDS_REVIEW
             ).count(),
+            "pending_history_count": PlatformOrder.objects.filter(
+                scope_status=PlatformOrder.Scope.HISTORICAL, order__isnull=True
+            ).count(),
             "sync_start_local": connection.sync_start_at.astimezone(BEIJING).date()
             if connection and connection.sync_start_at
             else None,
@@ -95,9 +98,24 @@ def operate(request, operation):
             messages.success(request, "授权店铺验证成功。")
         else:
             connection = get_object_or_404(Connection)
-            if operation in ("sync", "rescan"):
-                enqueue(queue_sync(connection, full=operation == "rescan"))
-                messages.success(request, "已提交同步任务，可刷新查看结果。")
+            if operation in ("sync", "rescan", "history-import"):
+                history_import = operation == "history-import"
+                if history_import:
+                    connection.actor = request.user
+                    connection.save(update_fields=["actor", "updated_at"])
+                enqueue(
+                    queue_sync(
+                        connection,
+                        full=operation in ("rescan", "history-import"),
+                        history_import=history_import,
+                    )
+                )
+                messages.success(
+                    request,
+                    "已开始从闲管家同步并导入历史订单，请稍后刷新查看导入数量。"
+                    if history_import
+                    else "已提交同步任务，可刷新查看结果。",
+                )
             elif operation == "confirm-start":
                 try:
                     start_date = date.fromisoformat(request.POST.get("sync_start_date", ""))

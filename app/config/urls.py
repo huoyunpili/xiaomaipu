@@ -18,7 +18,6 @@ from app.shops.views import settings_view
 from app.workbench import views as workspace_views
 
 urlpatterns = [
-    path("supplier/", include("app.workbench.supplier_urls")),
     path("workspace/", include("app.workbench.urls")),
     path("health/live/", views.health_live, name="health-live"),
     path("health/ready/", views.health_ready, name="health-ready"),

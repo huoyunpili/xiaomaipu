@@ -33,11 +33,40 @@ def test_dashboard_groups_changed_shipping_batches(connection, admin_user, clien
     response = client.get(reverse("dashboard"))
     assert response.status_code == 200
     html = response.content.decode()
-    assert html.count("供应商甲 的清单有订单变化") == 1
-    assert html.count("供应商乙 的清单有订单变化") == 1
-    assert "查看相关清单（3 份）" in html
-    for batch in batches:
+    assert html.count("供应商甲 的最新发货清单有变化") == 1
+    assert html.count("供应商乙 的最新发货清单有变化") == 1
+    assert "查看相关清单" not in html
+    for batch in batches[:2]:
+        assert reverse("wb-batch", args=[batch.pk]) not in html
+    for batch in batches[2:]:
         assert reverse("wb-batch", args=[batch.pk]) in html
+
+
+def test_new_shipping_export_clears_only_its_supplier_reminder(connection, admin_user, client):
+    trade = make_trade(connection)
+    update_product(trade.product, 6000, "供应商甲", admin_user)
+    trade.refresh_from_db()
+    old = create_batches([trade], "shipping", admin_user)[0]
+    ExportBatch.objects.filter(pk=old.pk).update(stale=True)
+    other = ExportBatch.objects.create(
+        shop=connection.shop, actor=admin_user, supplier="供应商乙", kind="shipping", stale=True
+    )
+    # A refund export does not resolve a shipping reminder.
+    ExportBatch.objects.create(
+        shop=connection.shop, actor=admin_user, supplier="供应商甲", kind="refund"
+    )
+    client.force_login(admin_user)
+    assert len(client.get(reverse("dashboard")).context["stale_batches"]) == 2
+    new = create_batches([trade], "shipping", admin_user)[0]
+    # Later updates to an old batch must not revive a superseded reminder.
+    old.refresh_from_db()
+    old.save()
+    response = client.get(reverse("dashboard"))
+    assert [b.pk for b in response.context["stale_batches"]] == [other.pk]
+    assert old.stale  # Historical warning remains available on the old batch itself.
+    ExportBatch.objects.filter(pk=new.pk).update(stale=True)
+    response = client.get(reverse("dashboard"))
+    assert {b.pk for b in response.context["stale_batches"]} == {new.pk, other.pk}
 
 
 def test_shipped_batch_does_not_warn_to_stop_shipping(connection, admin_user, client):

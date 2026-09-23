@@ -378,3 +378,35 @@ def test_refund_detail_is_reconciliation_only(connection, admin_user):
         refresh_refund(actor=admin_user, row_id=row.pk, client=client)
     row.refresh_from_db()
     assert row.refund_snapshot["apply_amount"] == 1000
+
+
+@override_settings(XGJ_APP_KEY="test-key", XGJ_APP_SECRET="test-secret")
+def test_shipping_rejection_keeps_private_redacted_diagnostic():
+    from app.integrations.client import APIRejected
+
+    opener = MagicMock()
+    opener.open.return_value.__enter__.return_value.read.return_value = json.dumps(
+        {
+            "code": 100001,
+            "msg": "寄件人信息不完整 ship_mobile=13912345678 secret=test-secret https://example.com/?sign=hidden",
+        }
+    ).encode()
+    with (
+        patch("urllib.request.build_opener", return_value=opener),
+        pytest.raises(APIRejected) as exc,
+    ):
+        XgjClient().call("ship", {"order_no": "1234567890123456789"})
+    assert exc.value.code == 100001 and exc.value.operation == "ship"
+    assert "默认寄件人" in str(exc.value)
+    assert "test-secret" not in exc.value.diagnostic
+    assert "13912345678" not in exc.value.diagnostic
+    assert "https://" not in exc.value.diagnostic
+    assert "ship_mobile" not in str(exc.value)
+
+
+def test_unknown_rejection_does_not_assume_permission_failure():
+    from app.integrations.client import rejection_hint
+
+    message = rejection_hint(100001, "ship", "unknown error")
+    assert "原因尚未确认" in message
+    assert "套餐" not in message and "权限" not in message

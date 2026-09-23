@@ -1,10 +1,11 @@
 from datetime import timedelta
+from unittest.mock import MagicMock
 
 import pytest
 from django.utils import timezone
 
 from app.integrations.models import Connection
-from app.integrations.services import store_order
+from app.integrations.services import execute_sync, queue_sync, store_order
 from app.shops.models import Shop
 from app.workbench.models import Trade
 from app.workbench.services import import_saved_history
@@ -75,3 +76,38 @@ def test_saved_history_import_is_scoped_and_requires_admin(connection, admin_use
     assert Trade.objects.count() == 0
     assert len(import_saved_history(connection, admin_user)) == 1
     assert not Trade.objects.filter(shop=other_shop).exists()
+
+
+def test_history_sync_scans_provider_window_and_imports_in_one_run(connection, admin_user):
+    run = queue_sync(connection, full=True, history_import=True)
+    assert run.history_import_requested
+    assert 178 * 86400 <= run.window_end - run.window_start <= 179 * 86400
+    old = int((connection.sync_start_at - timedelta(days=40)).timestamp())
+    client = MagicMock()
+    client.call.return_value = {
+        "list": [
+            payload(
+                number="333001",
+                order_time=old,
+                pay_time=old + 10,
+                confirm_time=old + 3600,
+                update_time=run.window_start + 10,
+                order_status=22,
+            )
+        ]
+    }
+
+    execute_sync(run.pk, client=client, worker_id="history-test")
+
+    run.refresh_from_db()
+    trade = Trade.objects.get(number="333001")
+    assert run.status == "DONE"
+    assert run.historical_count == 1
+    assert run.history_imported_count == 1
+    assert trade.source == "API_HISTORY"
+
+
+def test_old_history_upload_page_is_removed(client, admin_user):
+    client.force_login(admin_user)
+    response = client.post("/workspace/history/", {"file": "ignored"})
+    assert response.status_code == 404

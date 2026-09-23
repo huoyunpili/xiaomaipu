@@ -15,7 +15,6 @@ from django.utils import timezone
 from app.common.business import BusinessError
 from app.integrations.services import refresh_refund, store_refund
 from app.workbench.exports import cleanup_images, private_path, save_image, validate_png
-from app.workbench.importing import HEADERS, import_rows
 from app.workbench.models import ExportImage, Trade, WorkspaceSettings
 from app.workbench.repayment import due_rows, filter_due
 from app.workbench.services import classify, create_batches, update_product
@@ -109,29 +108,6 @@ def test_reference_setting_validation_and_preservation(connection, admin_user, c
     assert trade.reference_at is None
 
 
-def csv_order(number="900000001", sku=""):
-    stream = io.StringIO()
-    writer = csv.DictWriter(stream, HEADERS + ["规格标识"])
-    writer.writeheader()
-    values = dict.fromkeys(HEADERS, "")
-    values.update(
-        {
-            "订单号": number,
-            "商品标识": "42",
-            "商品名称": "测试商品",
-            "型号规格": "黑色 大号",
-            "规格标识": sku,
-            "数量": "2",
-            "实付金额": "200",
-            "状态": "待发货",
-            "下单时间": "2026-01-01 10:00",
-            "付款时间": "2026-01-01 10:01",
-        }
-    )
-    writer.writerow(values)
-    return stream.getvalue()
-
-
 def test_product_notes_reused_without_overwriting_local_or_history(connection, admin_user):
     trade = make_trade(connection, seller_remark="平台要求")
     trade.note = "本单要求"
@@ -168,11 +144,6 @@ def test_product_notes_reused_without_overwriting_local_or_history(connection, a
     assert changed.supplier_wechat == "甲工厂新备注"
     new = make_trade(connection, number="123459999")
     assert new.default_shipping_note == "防潮包装" and new.supplier_wechat == "甲工厂新备注"
-    import_rows(csv_order(), admin_user)
-    imported = Trade.objects.get(number="900000001")
-    assert (
-        imported.default_shipping_note == "防潮包装" and imported.supplier_wechat == "甲工厂新备注"
-    )
 
 
 def test_product_note_form_and_order_supplier_override(connection, admin_user, client):
@@ -218,37 +189,6 @@ def test_product_note_form_and_order_supplier_override(connection, admin_user, c
     assert trade.shipping_note == "不放价格单\n本单加固"
     response = client.get(reverse("wb-detail", args=[trade.pk]))
     assert "不放价格单" in response.content.decode() and "本单加固" in response.content.decode()
-
-
-def test_csv_after_api_reuses_cost_and_historical_sync_links(connection, admin_user):
-    api = make_trade(connection)
-    update_product(api.product, 6000, "甲", admin_user)
-    import_rows(csv_order(), admin_user)
-    imported = Trade.objects.get(number="900000001")
-    assert imported.product_id == api.product_id and imported.unit_cost_fen == 6000
-    linked = make_trade(connection, number=imported.number, order_time=1)
-    assert linked.pk == imported.pk and linked.platform_id and linked.unit_cost_fen == 6000
-    assert Trade.objects.count() == 2
-
-
-def test_api_after_csv_reuses_cost(connection, admin_user):
-    import_rows(csv_order(), admin_user)
-    imported = Trade.objects.get(number="900000001")
-    update_product(imported.product, 6000, "甲", admin_user)
-    api = make_trade(connection)
-    assert api.product_id == imported.product_id and api.unit_cost_fen == 6000
-
-
-def test_csv_ambiguous_sku_requires_explicit_identity(connection, admin_user):
-    first = make_trade(connection)
-    second_goods = {**payload()["goods"], "sku_id": "8"}
-    second = make_trade(connection, number="800000002", goods=second_goods)
-    assert first.product_id != second.product_id
-    with pytest.raises(BusinessError, match="规格标识"):
-        import_rows(csv_order(), admin_user)
-    assert Trade.objects.count() == 2
-    import_rows(csv_order(sku="7"), admin_user)
-    assert Trade.objects.get(number="900000001").product_id == first.product_id
 
 
 @pytest.mark.parametrize(

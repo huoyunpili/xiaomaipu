@@ -56,6 +56,8 @@ class SyncRun(BaseModel):
     accepted_count = models.PositiveIntegerField(default=0)
     historical_count = models.PositiveIntegerField(default=0)
     review_count = models.PositiveIntegerField(default=0)
+    history_import_requested = models.BooleanField(default=False)
+    history_imported_count = models.PositiveIntegerField(default=0)
     lease_owner = models.CharField(max_length=64, blank=True)
     lease_generation = models.PositiveIntegerField(default=0)
     heartbeat_at = models.DateTimeField(null=True, blank=True)

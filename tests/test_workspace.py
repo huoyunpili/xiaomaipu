@@ -11,7 +11,6 @@ from django.utils import timezone
 from app.common.business import BusinessError
 from app.integrations.models import Connection
 from app.integrations.services import store_order
-from app.workbench.importing import HEADERS, import_rows
 from app.workbench.models import Trade
 from app.workbench.services import classify, create_batches, update_product
 
@@ -146,7 +145,6 @@ def test_all_pages_and_profits(connection, admin_user, client):
         "wb-refunds",
         "wb-settings",
         "wb-costs",
-        "wb-history",
         "wb-profits",
     ):
         response = client.get(reverse(name))
@@ -175,39 +173,6 @@ def test_date_boundaries_and_loss_separate(connection, admin_user, client):
     assert actual.context["summary"]["profit"] == 7680
     assert actual.context["loss_total"] == 1200
     assert expected.context["summary"]["profit"] == 0
-
-
-def test_csv_import_idempotent_and_atomic(shop, admin_user):
-    stream = io.StringIO()
-    writer = csv.writer(stream)
-    writer.writerow(HEADERS)
-    writer.writerow(
-        [
-            "999",
-            "42",
-            "商品",
-            "黑色",
-            "2",
-            "200",
-            "已完成",
-            "2026-01-01 10:00",
-            "2026-01-01 10:01",
-            "2026-01-01 12:00",
-            "2026-01-11 12:00",
-            "",
-            "客户",
-            "13000000000",
-            "地址",
-            "甲",
-        ]
-    )
-    content = stream.getvalue()
-    assert import_rows(content, admin_user) == (1, 0)
-    assert import_rows(content, admin_user) == (0, 1)
-    assert Trade.objects.count() == 1
-    with pytest.raises(BusinessError):
-        import_rows(content.replace("999", "998") + "bad,row\n", admin_user)
-    assert Trade.objects.count() == 1
 
 
 def test_permissions_and_refund_record(connection, admin_user, client):

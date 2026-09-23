@@ -49,5 +49,4 @@ do {
     Start-Sleep -Seconds 1
 } while ([DateTime]::UtcNow -lt $taskDeadline)
 if (-not $taskReady) { throw 'Web or synchronization worker is not ready; inspect .local service logs.' }
-& (Join-Path $PSScriptRoot 'start_supplier.ps1')
 $taskStarted | ConvertTo-Json

@@ -55,6 +55,28 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .wb-supplier-option { border-radius: var(--ui-radius-1); }
 .wb-supplier-toggle, .wb-supplier-toggle:hover { min-height: 0; padding: 0; }
 footer { font-size: var(--ui-font-size-caption); }
+.account-menu { position: relative; margin: 0; border: 0; padding: 0; flex: 0 1 auto; min-width: 0; color: var(--ui-color-text-primary); }
+.account-menu > summary { list-style: none; display: flex; align-items: center; gap: var(--ui-space-2); min-height: 44px; padding: var(--ui-space-1) var(--ui-space-2); border-radius: var(--ui-radius-2); cursor: pointer; }
+.account-menu > summary::-webkit-details-marker { display: none; }
+.account-menu > summary:hover, .account-menu[open] > summary { background: var(--ui-color-bg-hover); }
+.account-menu > summary:focus-visible { outline: 2px solid var(--ui-color-focus); outline-offset: 2px; }
+.account-avatar { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--ui-color-info-bg); color: var(--ui-color-info-text); font-size: 14px; font-weight: 600; }
+.account-name { max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; }
+.account-chevron { flex: none; transition: transform var(--ui-motion-fast); }
+.account-menu[open] .account-chevron { transform: rotate(180deg); }
+.account-popover { position: absolute; top: calc(100% + 6px); right: 0; width: min(280px, calc(100vw - 32px)); padding: 16px; background: var(--ui-color-bg-surface); border: 1px solid var(--ui-color-border-subtle); border-radius: var(--ui-radius-3); box-shadow: var(--ui-shadow-popover); z-index: var(--ui-z-dropdown); overflow-wrap: anywhere; }
+.account-popover p { margin: 0 0 6px; }
+.account-popover > strong { display: block; font-size: 16px; }
+.account-caption, .account-login { color: var(--ui-color-text-secondary); font-size: 12px; }
+.account-popover a { display: block; border-top: 1px solid var(--ui-color-border-subtle); padding: 12px 8px; margin-top: 12px; min-height: 44px; }
+.account-popover a span { display: block; color: var(--ui-color-text-secondary); font-size: 12px; }
+.account-popover form { margin: 0; }
+.account-popover button { width: 100%; min-height: 44px; text-align: left; background: transparent; color: var(--ui-color-text-primary); border: 0; padding: 8px; }
+.account-popover a:hover, .account-popover button:hover { background: var(--ui-color-bg-hover); }
+.account-welcome { margin: 4px 0; color: var(--ui-color-text-secondary); overflow-wrap: anywhere; }
+.account-welcome strong { color: var(--ui-color-text-primary); font-weight: 500; }
+.workspace-topbar > span:first-child { flex-shrink: 0; }
+@media (max-width: 600px) { .account-name { max-width: 112px; } .account-menu > summary { gap: 6px; padding-inline: 4px; } }
 
 /* Application shell: neutral navigation and content, restrained action color. */
 a { color: var(--ui-color-text-link); }

@@ -1,12 +1,10 @@
 from django.urls import path
 
 from . import supplier_views, views
-from .importing import history
 
 urlpatterns = [
     path("batch/<uuid:pk>/text/", supplier_views.download_text, name="wb-batch-text"),
-    path("batch/<uuid:pk>/link/", supplier_views.create_link, name="wb-batch-link"),
-    path("batch/<uuid:pk>/revoke/", supplier_views.revoke, name="wb-batch-revoke"),
+    # Keep authenticated download access for evidence created by pre-0.6 releases.
     path("supplier-video/<uuid:pk>/", supplier_views.video_download, name="wb-supplier-video"),
     path("shipping/", views.listing, {"area": "shipping"}, name="wb-shipping"),
     path("pending/", views.listing, {"area": "pending"}, name="wb-pending"),
@@ -22,5 +20,4 @@ urlpatterns = [
     path("batch/<uuid:pk>/image/", views.batch_image, name="wb-batch-image"),
     path("image/<uuid:pk>/", views.image_download, name="wb-image"),
     path("settings/", views.settings, name="wb-settings"),
-    path("history/", history, name="wb-history"),
 ]

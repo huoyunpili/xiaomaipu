@@ -25,6 +25,7 @@ __pycache__/
 .ruff_cache/
 staticfiles/
 artifacts/
+/control/
 *.sqlite3
 .local/
 .local-release/
@@ -34,6 +35,26 @@ release-data/
 .docx_work/
 .docx_qa/
 *.docx
+
+# Private product-development records. Keep these files locally, but never
+# publish them to GitHub or include them in a source release.
+/M1-*.md
+/M2A-*.md
+/PRD-*.md
+/开发流程与质量保障计划.md
+/技术实现文档-闲鱼小卖家后台管理系统-MVP.md
+/闲管家API前置验证计划.md
+/项目完成计划-闲鱼小卖家后台管理系统-MVP.md
+/docs/*
+!/docs/manual/
+!/docs/manual/index.html
+!/docs/product/
+!/docs/product/index.html
+!/docs/product/images/
+!/docs/product/images/*.png
+/docs/manual/README.md
+/docs/product/README.md
+/docs/product/images/README.md
 
 # One-off local source-editing helpers; not part of the application.
 /scripts/align_workspace.py

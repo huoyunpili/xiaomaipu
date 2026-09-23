@@ -367,13 +367,15 @@ def confirm_sync_start(*, actor, connection, start_date: date):
 
 
 @transaction.atomic
-def queue_sync(connection, *, full=False):
+def queue_sync(connection, *, full=False, history_import=False):
     connection = Connection.objects.select_for_update().get(pk=connection.pk)
     if not connection.sync_start_at:
-        raise APIError("请先确认自动同步起始日；历史订单继续使用表格导入。")
+        raise APIError("请先确认自动同步起始日，再从闲管家同步历史订单。")
     now_dt = timezone.now()
     active = connection.runs.filter(status__in=["QUEUED", "RUNNING", "RETRY"]).first()
     if active:
+        if history_import:
+            raise APIError("当前已有同步任务，请等待完成后再导入闲管家历史订单。")
         if (
             active.status == "RUNNING"
             and active.lease_expires_at
@@ -399,11 +401,19 @@ def queue_sync(connection, *, full=False):
         raise APIError("自动同步起始日晚于当前时间，请核对电脑时间。")
     if not full and connection.cursor and now - connection.cursor > 179 * 86400:
         raise APIError("同步中断已超过平台查询时间范围，请先用表格补齐历史并重新核对。")
-    cursor_start = connection.cursor - OVERLAP_SECONDS if connection.cursor and not full else start
+    if history_import:
+        # The provider limits order-list queries to the most recent six months.
+        # Stay one day inside that boundary to avoid clock/rounding rejection.
+        cursor_start = max(0, now - 179 * 86400)
+    else:
+        cursor_start = (
+            connection.cursor - OVERLAP_SECONDS if connection.cursor and not full else start
+        )
     return SyncRun.objects.create(
         connection=connection,
-        window_start=max(cursor_start, start),
+        window_start=cursor_start if history_import else max(cursor_start, start),
         window_end=now,
+        history_import_requested=history_import,
     )
 
 
@@ -437,7 +447,9 @@ def _apply_page(run_id, owner, generation, page, batch):
         if not _owns(run, owner, generation) or run.page != page:
             return None
         if len(batch) == 100 and run.page >= 100:
-            raise APIError("达到平台 10000 条查询上限，覆盖不完整，请使用表格补齐。")
+            raise APIError(
+                "达到闲管家单次 10000 条查询上限，本次未完整导入；请先在闲管家缩小或分批整理历史订单后重试。"
+            )
         for data in batch:
             if not (
                 type(data.get("update_time")) is int
@@ -510,7 +522,28 @@ def execute_sync(run_id, client=None, worker_id=None):
             }
             batch = rows(client.call("orders", params, seller=run.connection.seller_id))
             finished = _apply_page(run_id, owner, generation, page, batch)
-            if finished is None or finished:
+            if finished is None:
+                return
+            if finished:
+                completed = SyncRun.objects.select_related("connection__actor").get(pk=run_id)
+                if completed.history_import_requested:
+                    from app.workbench.services import import_saved_history
+
+                    try:
+                        imported = import_saved_history(
+                            completed.connection, completed.connection.actor
+                        )
+                    except Exception:
+                        message = "闲管家订单已同步，但历史订单写入失败，请重试历史导入。"
+                        SyncRun.objects.filter(pk=completed.pk).update(
+                            status="FAILED", error=message
+                        )
+                        Connection.objects.filter(pk=completed.connection_id).update(error=message)
+                        return
+                    else:
+                        SyncRun.objects.filter(pk=completed.pk).update(
+                            history_imported_count=len(imported)
+                        )
                 return
     except APIError as exc:
         if _fail_owned(run_id, owner, generation, str(exc), exc.retryable):
@@ -533,7 +566,7 @@ def convert_order(*, actor, row_id, sku_id, quantity, unit_price_fen, selected_l
     if row.order_id:
         return row.order
     if row.scope_status == PlatformOrder.Scope.HISTORICAL:
-        raise BusinessError("接入日前订单请通过历史表格导入，避免作为新单重复履约。")
+        raise BusinessError("接入日前订单请使用闲管家历史订单同步，避免作为新单重复履约。")
     channel = SalesChannel.objects.get(code="XIANYU", is_active=True)
     existing = SalesOrder.objects.filter(
         channel=channel, external_order_no=row.external_order_no

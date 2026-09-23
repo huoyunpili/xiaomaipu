@@ -434,7 +434,10 @@ def update_product(
         )
     for trade in Trade.objects.select_for_update().filter(product=product, shop_id=product.shop_id):
         if trade.unit_cost_fen is None:
-            trade.unit_cost_fen, trade.cost_version = cost_at_payment(product, trade.paid_at)
+            cost_date = trade.paid_at or (
+                trade.ordered_at if trade.source == "BILL_IMPORT" else None
+            )
+            trade.unit_cost_fen, trade.cost_version = cost_at_payment(product, cost_date)
         if not trade.supplier_override:
             trade.supplier = supplier
             trade.supplier_wechat = product.supplier_wechat

@@ -2,7 +2,6 @@ import base64
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
 
 import pytest
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -11,7 +10,6 @@ from django.test import override_settings
 from playwright.sync_api import expect, sync_playwright
 
 from app.accounts.models import User
-from app.importing.services import HEADERS, execute_import
 from tests.test_business import draft, goods
 
 
@@ -76,18 +74,9 @@ class TestOperationsBrowser(StaticLiveServerTestCase):
             assert video.evaluate("v => v.videoWidth") > 0
             page.screenshot(path=str(screenshots / "evidence-mobile.png"), full_page=True)
             page.goto(self.live_server_url + "/imports/")
-            raw = (
-                ",".join(HEADERS) + f"\nBROWSER-IMPORT,WECHAT,{sku.code},表格买家,1,88,\n"
-            ).encode()
-            page.locator('input[type="file"]').set_input_files(
-                {"name": "orders.csv", "mimeType": "text/csv", "buffer": raw}
-            )
-            page.get_by_role("button", name="上传并预览").click()
-            expect(page.get_by_text("待确认导入", exact=True)).to_be_visible()
-            with patch("app.importing.views.run_import.delay", side_effect=execute_import):
-                page.get_by_role("button", name="确认导入 / 重试待处理行").click()
-                expect(page.get_by_text("处理完成", exact=True)).to_be_visible()
-            page.screenshot(path=str(screenshots / "import-mobile.png"), full_page=True)
+            expect(page.get_by_role("heading", name="闲管家订单同步")).to_be_visible()
+            expect(page.get_by_text("本地订单文件导入已停用", exact=False)).to_be_visible()
+            page.screenshot(path=str(screenshots / "xgj-history-mobile.png"), full_page=True)
             for route, heading, filename in (
                 ("/reports/", "经营报表", "reports-mobile.png"),
                 ("/risks/", "商品与库存风险", "risks-mobile.png"),

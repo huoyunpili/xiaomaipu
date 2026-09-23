@@ -53,6 +53,7 @@ class Trade(BaseModel):
         CLOSED = "CLOSED", "已关闭"
         REVIEW = "REVIEW", "待核对"
         UNPAID = "UNPAID", "未付款"
+        NONSALE = "NONSALE", "非经营订单"
 
     shop = models.ForeignKey("shops.Shop", on_delete=models.PROTECT)
     platform = models.OneToOneField(
@@ -125,7 +126,12 @@ class Trade(BaseModel):
 
     @property
     def profit_fen(self):
-        if self.status not in ("SHIPPING", "PENDING", "COMPLETED") or not self.paid_at:
+        confirmed_bill = (
+            self.source == "BILL_IMPORT" and self.status == "COMPLETED" and self.completed_at
+        )
+        if self.status not in ("SHIPPING", "PENDING", "COMPLETED") or not (
+            self.paid_at or confirmed_bill
+        ):
             return None
         return None if self.cost_fen is None else self.paid_fen - self.cost_fen - self.fee_fen
 

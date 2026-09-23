@@ -43,6 +43,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     render();
   });
+  const accountMenu = document.querySelector('.account-menu');
+  if (accountMenu) {
+    document.addEventListener('click', event => {
+      if (!accountMenu.contains(event.target)) accountMenu.open = false;
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && accountMenu.open) {
+        accountMenu.open = false;
+        accountMenu.querySelector('summary').focus();
+      }
+    });
+  }
   const select=document.getElementById("select-all");
   if(select) select.addEventListener("change",()=>document.querySelectorAll('[name="selected"]').forEach(c=>c.checked=select.checked));
   document.querySelectorAll(".wb-thumb img").forEach(img=>{

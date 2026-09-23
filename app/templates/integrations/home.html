@@ -30,6 +30,15 @@
   <form method="post" action="{% url 'xgj-operate' 'enable' %}">{% csrf_token %}<button>开启每 5 分钟同步</button></form>
   <form method="post" action="{% url 'xgj-operate' 'disable' %}">{% csrf_token %}<button class="quiet">关闭自动同步</button></form>
 </div>
+<section class="card" id="history-import">
+  <h2>从闲管家导入历史订单</h2>
+  <p>先在闲管家完成历史订单导入，再点击下面的按钮。鱼管家会扫描闲管家近 179 天内更新过的订单，自动去重，并把接入日前订单导入订单与利润数据。</p>
+  <p>当前已同步但尚未导入的历史快照：<strong>{{ pending_history_count }}</strong> 条。一次最多读取 10000 条；超过限制时请先在闲管家分批整理后重试。</p>
+  <form method="post" action="{% url 'xgj-operate' 'history-import' %}">
+    {% csrf_token %}
+    <button>同步并导入闲管家历史订单</button>
+  </form>
+</section>
 {% endif %}
 {% endif %}
 
@@ -40,7 +49,7 @@
   {% if latest_data_run %}<p class="muted">最近一次取得数据：扫描 {{ latest_data_run.scanned_count }} 条，其中接入日后 {{ latest_data_run.accepted_count }} 条、接入日前 {{ latest_data_run.historical_count }} 条。</p>{% endif %}
   {% if recovered_failure_count %}<p class="muted">此前 {{ recovered_failure_count }} 次同步失败，后续同步已经成功恢复。</p>{% endif %}
   <p>商品查询：当前账号权限和真实样本尚未重新验证，因此不启用商品接口。订单商品 ID 与<a href="{% url 'product-list' %}">人工链接映射</a>继续可用。</p>
-  <p><a href="{% url 'xgj-home' %}">当前订单</a> · <a href="?pending=1">只看待核对</a> · <a href="?all=1">查看全部平台快照</a> · <a href="{% url 'import-home' %}">导入接入日前历史</a></p>
+  <p><a href="{% url 'xgj-home' %}">当前订单</a> · <a href="?pending=1">只看待核对</a> · <a href="?all=1">查看全部平台快照</a>{% if user.is_shop_admin %} · <a href="#history-import">从闲管家导入历史订单</a>{% endif %}</p>
 </section>
 
 <h2>{% if show_all %}全部平台快照{% else %}当前订单{% endif %}</h2>
@@ -61,7 +70,7 @@
 <h2>同步运行记录</h2>
 {% if show_history %}
 {% for run in runs %}
-<p>{{ run.created_at }} · {{ run.status_label }} · 扫描 {{ run.scanned_count }} · 范围内 {{ run.accepted_count }} · 历史 {{ run.historical_count }} · 待核对 {{ run.review_count }} · 第 {{ run.page }} 页{% if run.error %} · {{ run.error }}{% endif %}</p>
+<p>{{ run.created_at }} · {{ run.status_label }} · 扫描 {{ run.scanned_count }} · 范围内 {{ run.accepted_count }} · 历史 {{ run.historical_count }} · 待核对 {{ run.review_count }}{% if run.history_import_requested %} · 已导入历史 {{ run.history_imported_count }}{% endif %} · 第 {{ run.page }} 页{% if run.error %} · {{ run.error }}{% endif %}</p>
 {% empty %}<p>暂无任务</p>{% endfor %}
 <p><a href="{% url 'xgj-home' %}{% if show_all %}?all=1{% endif %}">收起运行记录</a></p>
 {% else %}<p><a href="?history=1{% if show_all %}&all=1{% endif %}">查看最近 20 次运行记录</a></p>{% endif %}
@@ -69,5 +78,5 @@
 <p class="notice">有 {{ failed_notices }} 条推送未能读取详情。</p>
 {% if user.is_shop_admin %}<form method="post" action="{% url 'xgj-operate' 'retry-notices' %}">{% csrf_token %}<button>重试失败通知</button></form>{% endif %}
 {% endif %}
-<p>列表查询受平台近六个月更新时间和最多 10000 条限制。断网、授权失效或超出窗口时，本地手工经营和表格导入仍可使用。</p>
+<p>列表查询受平台近六个月更新时间和最多 10000 条限制。断网、授权失效或超出窗口时，已有本地经营数据仍可使用；恢复后可重新从闲管家同步。</p>
 {% endblock %}

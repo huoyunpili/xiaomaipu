@@ -14,7 +14,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $env:COMPOSE_BAKE = 'false'
-$releaseVersion = '0.6.0-rc1'
+$releaseVersion = '0.6.0'
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $composeFile = Join-Path $projectRoot 'deployment/compose.local.yaml'
 $dataRoot = [IO.Path]::GetFullPath($DataDir)

@@ -110,8 +110,6 @@ def main():
         "workbench-costs.js",
         "workbench.css",
         "theme.css",
-        "supplier.js",
-        "supplier.css",
         "shipping-text.js",
     ):
         assert (Path(settings.STATIC_ROOT) / name).is_file()

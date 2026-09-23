@@ -1,0 +1,16 @@
+{% with account_name=user.display_name|default:user.username %}
+<details class="account-menu">
+  <summary aria-label="当前账号：{{ account_name }}，展开账号选项">
+    <span class="account-avatar" aria-hidden="true">{{ account_name|slice:":1"|upper }}</span>
+    <span class="account-name" title="{{ account_name }}">{{ account_name }}</span>
+    <svg class="account-chevron" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </summary>
+  <div class="account-popover">
+    <p class="account-caption">当前登录账号</p>
+    <strong>{{ account_name }}</strong>
+    <p class="account-login">{{ user.username }}</p>
+    <a href="{% url 'account-settings' %}">账号设置 <span>修改称呼与密码</span></a>
+    <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">退出登录</button></form>
+  </div>
+</details>
+{% endwith %}

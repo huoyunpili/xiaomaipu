@@ -1,1 +1,1 @@
-{% extends 'base.html' %}{% block content %}<h1>清单已生成</h1><p>已按供应商分组。发货清单可复制文字或下载 TXT，附单号和视频回传入口；退款清单可下载图片。</p>{% for b in batches %}<a class="wb-panel wb-export-link" href="{% url 'wb-batch' b.pk %}">{{ b.supplier }} · {{ b.snapshot|length }} 单 →</a>{% endfor %}{% endblock %}
+{% extends 'base.html' %}{% block content %}<h1>清单已生成</h1><p>已按供应商分组。发货清单可复制文字或下载 TXT；退款清单可下载图片。</p>{% for b in batches %}<a class="wb-panel wb-export-link" href="{% url 'wb-batch' b.pk %}">{{ b.supplier }} · {{ b.snapshot|length }} 单 →</a>{% endfor %}{% endblock %}

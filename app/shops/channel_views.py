@@ -62,7 +62,7 @@ def channel_edit(request, channel_id=None):
         request,
         form=form,
         title="销售渠道",
-        intro="自定义销售来源，停用后不再用于新开单，历史订单保留。渠道代码用于表格导入，保存后不可修改。",
+        intro="自定义销售来源，停用后不再用于新开单，历史订单保留。渠道代码属于历史兼容标识，保存后不可修改。",
         save=save,
         destination=lambda result: reverse("shop-settings"),
         back_url=reverse("shop-settings"),

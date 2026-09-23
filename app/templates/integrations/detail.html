@@ -38,7 +38,7 @@
 <p><a href="{% url 'order-detail' row.order.pk %}">查看已关联销售单 {{ row.order.number }}</a></p>
 <form method="post">{% csrf_token %}<button name="action" value="review">已核对本次平台变化</button></form>
 {% elif row.scope_status == 'HISTORICAL' %}
-<p class="notice">该订单早于接入起始日。请通过<a href="{% url 'import-home' %}">历史表格导入</a>核对，系统不会把它作为新订单执行。</p>
+<p class="notice">该订单早于接入起始日。请返回<a href="{% url 'xgj-home' %}#history-import">闲管家订单同步</a>执行历史导入，系统不会把它作为新订单重复履约。</p>
 {% else %}
 <h2>关联商品并创建草稿</h2>
 <form method="post">{% csrf_token %}{{ form.as_p }}<button name="action" value="convert">创建或关联销售草稿</button></form>

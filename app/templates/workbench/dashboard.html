@@ -1,5 +1,5 @@
 {% extends 'base.html' %}{% load workbench %}{% block content %}
-<div class="wb-heading"><div><p class="eyebrow">每日经营</p><h1>鱼管家</h1><p class="muted">先处理发货和退款，再看钱什么时候回来。</p></div><a class="button" href="{% url 'wb-shipping' %}">查看待发货 →</a></div>
+<div class="wb-heading"><div><p class="eyebrow">每日经营</p><h1>鱼管家</h1><p class="account-welcome"><strong>{{ user.display_name|default:user.username }}</strong>，欢迎回来。</p><p class="muted">先处理发货和退款，再看钱什么时候回来。</p></div><a class="button" href="{% url 'wb-shipping' %}">查看待发货 →</a></div>
 <div class="wb-metrics">
 <a class="wb-metric" href="{% url 'wb-shipping' %}"><span>待发货</span><strong>{{ shipping }} <small>单</small></strong><span>及时发给供应商</span></a>
 <a class="wb-metric" href="{% url 'wb-orders' %}?guarantee=1"><span>担保中金额</span><strong>¥{{ guarantee|money }}</strong><span>按订单推算 · {{ guarantee_count }} 单</span></a>
@@ -18,7 +18,7 @@
 {% if unknown_due_count %}<p class="wb-warning"><a href="{% url 'wb-pending' %}?due=unknown">{{ unknown_due_count }} 单 / ¥{{ unknown_due_amount|money }} 缺少发货时间</a>，仍在待完成与担保金额中，暂不计入日期预测。</p>{% endif %}
 <p><a href="{% url 'wb-refunds' %}?refund_view=recovery">退货退款未追回货款：<strong>{% if recovery == None %}待补成本{% else %}¥{{ recovery|money }}{% endif %}</strong></a></p></div>
 {% if review_count %}<p class="wb-warning"><a href="{% url 'wb-orders' %}?status=REVIEW">{{ review_count }} 单待核对</a>，涉及已付款金额 ¥{{ review_paid_fen|money }}。这些订单尚未纳入担保和利润合计，请核对平台状态。</p>{% endif %}
-{% for b in stale_batches %}<div class="wb-warning"><a href="{% url 'wb-batch' b.pk %}">{{ b.supplier }} 的清单有订单变化：停止发货并联系供应商，核对后重新导出。</a>{% if b.batches|length > 1 %}<details><summary>查看相关清单（{{ b.batches|length }} 份）</summary><ul>{% for batch in b.batches %}<li><a href="{% url 'wb-batch' batch.pk %}">{{ batch.created_at|date:"m-d H:i" }} 导出的清单</a></li>{% endfor %}</ul></details>{% endif %}</div>{% endfor %}
+{% for b in stale_batches %}<div class="wb-warning"><a href="{% url 'wb-batch' b.pk %}">{{ b.supplier }} 的最新发货清单有变化，请核对后重新导出。</a></div>{% endfor %}
 <div class="wb-panel"><h2>优先发货</h2>{% for t in waiting %}{% include 'workbench/order_card.html' %}{% empty %}<div class="wb-empty">▣<h3>当前没有待发货订单</h3><p>接入 API 后，新订单自动出现在这里。</p><a href="{% url 'xgj-home' %}">设置订单同步 →</a></div>{% endfor %}</div>
 {% include 'workbench/sync.html' %}
 {% endblock %}

@@ -38,6 +38,7 @@ class AuditEvent(BaseModel):
             "xgj.reviewed": "核对平台变化",
             "xgj.refund_checked": "查询平台售后事实",
             "account.updated": "修改自己的账号",
+            "supplier.shipping_rejected": "平台拒绝发货请求",
         }.get(self.action, "业务操作")
 
     class Meta:

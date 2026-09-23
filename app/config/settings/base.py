@@ -95,12 +95,18 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 X_FRAME_OPTIONS = "DENY"
 CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://127.0.0.1:56379/0")
+if CELERY_BROKER_URL == "filesystem://":
+    broker_root = Path(os.environ.get("CELERY_FILESYSTEM_ROOT", BASE_DIR / ".celery-queue"))
+    CELERY_BROKER_TRANSPORT_OPTIONS = {
+        "data_folder_in": str(broker_root / "messages"),
+        "data_folder_out": str(broker_root / "messages"),
+        "data_folder_processed": str(broker_root / "processed"),
+    }
 CELERY_TASK_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_IGNORE_RESULT = True
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULE = {
-    "supplier-shipping": {"task": "app.workbench.tasks.poll_supplier_dispatches", "schedule": 30.0},
     "cleanup-export-images": {"task": "app.workbench.tasks.cleanup_exports", "schedule": 86400.0},
     "xgj-poll": {"task": "app.integrations.tasks.poll_orders", "schedule": 300.0},
     "daily-market-intel": {"task": "app.insights.tasks.collect_market_intel", "schedule": 86400.0},

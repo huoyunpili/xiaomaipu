@@ -8,7 +8,7 @@ from pathlib import Path
 from dotenv import dotenv_values
 
 ROOT = Path(__file__).resolve().parents[1]
-IMAGE = "xianyu-seller-local:0.6.0-rc1"
+IMAGE = "xianyu-seller-local:0.6.0"
 
 
 def main():
@@ -58,7 +58,7 @@ print(json.dumps(files, sort_keys=True))
         if files.get(name) != hashlib.sha256(path.read_bytes()).hexdigest():
             raise RuntimeError("Built image differs from source: " + name)
     metadata = json.loads(subprocess.check_output(["docker", "image", "inspect", IMAGE]))[0]
-    assert metadata["Config"]["Labels"]["org.opencontainers.image.version"] == "0.6.0-rc1"
+    assert metadata["Config"]["Labels"]["org.opencontainers.image.version"] == "0.6.0"
     assert not any(value in json.dumps(metadata["Config"]) for value in secrets)
     report = {
         "passed": True,

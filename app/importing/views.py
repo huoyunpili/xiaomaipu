@@ -2,20 +2,17 @@ import csv
 import io
 
 from django import forms
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from app.accounts.policies import require_operator
-from app.common.business import BusinessError
 from app.common.forms import SubmissionForm
-from app.shops.models import SalesChannel
 
 from .models import ImportJob
-from .services import HEADERS, preview_import
-from .tasks import run_import
+from .services import HEADERS
 
 
 class ImportForm(SubmissionForm):
@@ -36,30 +33,11 @@ class ImportForm(SubmissionForm):
 @login_required
 @require_http_methods(["GET", "POST"])
 def import_home(request):
-    form = ImportForm(request.POST or None, request.FILES or None)
-    if request.method == "POST" and form.is_valid():
-        try:
-            job = preview_import(
-                actor=request.user,
-                upload=form.cleaned_data["file"],
-                column_mapping={
-                    header: form.cleaned_data[f"column_{index}"]
-                    for index, header in enumerate(HEADERS)
-                },
-            )
-        except (BusinessError, UnicodeError, csv.Error) as exc:
-            form.add_error(None, str(exc))
-        else:
-            return redirect("import-detail", job_id=job.pk)
-    return render(
+    messages.info(
         request,
-        "importing/home.html",
-        {
-            "form": form,
-            "jobs": ImportJob.objects.all()[:30],
-            "channels": SalesChannel.objects.filter(is_active=True),
-        },
+        "本地订单文件导入已停用。请先把历史订单导入闲管家，再由鱼管家统一同步。",
     )
+    return redirect("xgj-home")
 
 
 @login_required
@@ -95,21 +73,8 @@ def import_detail(request, job_id):
 @require_POST
 def import_confirm(request, job_id):
     require_operator(request.user)
-    with transaction.atomic():
-        job = get_object_or_404(ImportJob.objects.select_for_update(), pk=job_id)
-        if job.status in ("PREVIEW", "FAILED", "QUEUED"):
-            job.status = "QUEUED"
-            job.save()
-
-            def enqueue():
-                try:
-                    run_import.delay(str(job.pk))
-                except Exception:
-                    ImportJob.objects.filter(pk=job.pk).update(
-                        status="FAILED", error="后台队列暂不可用，请启动任务服务后重试。"
-                    )
-
-            transaction.on_commit(enqueue)
+    job = get_object_or_404(ImportJob, pk=job_id)
+    messages.info(request, "本地订单文件导入已停用，历史导入记录仅供查看。")
     return redirect("import-detail", job_id=job.pk)
 
 
@@ -131,7 +96,8 @@ def csv_response(rows, name):
 @login_required
 @require_GET
 def import_template(request):
-    return csv_response([HEADERS], "order-template.csv")
+    messages.info(request, "本地订单模板已停用，请通过闲管家导入历史订单。")
+    return redirect("xgj-home")
 
 
 @login_required

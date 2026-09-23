@@ -16,12 +16,12 @@
     <a href="{% url 'wb-orders' %}" {% if current == 'wb-orders' or current == 'wb-detail' %}aria-current="page"{% endif %}>{% include 'shared/nav_icon.html' with icon='list' %}全部订单</a>
     <p class="nav-group-label">经营管理</p>
     <a href="{% url 'wb-profits' %}" {% if current == 'wb-profits' %}aria-current="page"{% endif %}>{% include 'shared/nav_icon.html' with icon='chart' %}利润统计</a>
-    <a href="{% url 'wb-settings' %}" {% if current == 'wb-settings' or current == 'wb-costs' or current == 'wb-history' or current == 'xgj-home' %}aria-current="page"{% endif %}>{% include 'shared/nav_icon.html' with icon='settings' %}设置</a>
+    <a href="{% url 'wb-settings' %}" {% if current == 'wb-settings' or current == 'wb-costs' or current == 'xgj-home' %}aria-current="page"{% endif %}>{% include 'shared/nav_icon.html' with icon='settings' %}设置</a>
   </nav>
   {% endwith %}
   <div class="sidebar-footer"><span class="workspace-avatar" aria-hidden="true">店</span><div><strong>我的经营空间</strong><small>本地经营</small></div><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="quiet logout-button" aria-label="退出登录" title="退出登录">{% include 'shared/nav_icon.html' with icon='logout' %}</button></form></div>
 </aside>
-<header class="workspace-topbar"><span>经营空间 <span class="breadcrumb-separator" aria-hidden="true">/</span> <strong>{% with current=request.resolver_match.url_name %}{% if current == 'dashboard' %}工作台{% elif current == 'wb-shipping' %}待发货{% elif current == 'wb-pending' %}待完成{% elif current == 'wb-refunds' %}退款售后{% elif current == 'wb-profits' %}利润统计{% elif current == 'wb-orders' %}全部订单{% elif current == 'wb-detail' %}订单详情{% elif current == 'wb-costs' %}商品成本与供应商{% elif current == 'wb-settings' %}设置{% else %}经营管理{% endif %}{% endwith %}</strong></span><span class="workspace-topbar-note">鱼管家 · 鱼小铺后台管理助手</span></header>
+<header class="workspace-topbar"><span>经营空间 <span class="breadcrumb-separator" aria-hidden="true">/</span> <strong>{% with current=request.resolver_match.url_name %}{% if current == 'dashboard' %}工作台{% elif current == 'wb-shipping' %}待发货{% elif current == 'wb-pending' %}待完成{% elif current == 'wb-refunds' %}退款售后{% elif current == 'wb-profits' %}利润统计{% elif current == 'wb-orders' %}全部订单{% elif current == 'wb-detail' %}订单详情{% elif current == 'wb-costs' %}商品成本与供应商{% elif current == 'wb-settings' %}设置{% else %}经营管理{% endif %}{% endwith %}</strong></span>{% include 'shared/account_menu.html' %}</header>
 {% else %}<header><a class="brand" href="{% url 'dashboard' %}">鱼管家 <span>鱼小铺后台管理助手</span></a></header>{% endif %}
 <main id="main-content" tabindex="-1">{% for message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</main>
 {% if not user.is_authenticated %}<footer>本地经营</footer>{% endif %}</body></html>

@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -18,6 +19,55 @@ class APIError(Exception):
 
 class APIRejected(APIError):
     """Platform explicitly rejected the operation with a nonzero business code."""
+
+    def __init__(self, message, *, code=None, operation="", diagnostic=""):
+        super().__init__(message)
+        self.code = code
+        self.operation = operation
+        self.diagnostic = diagnostic
+
+
+def private_diagnostic(message, body, key, secret):
+    """Redacted provider text for the local administrator, never the public portal/logs."""
+    if not isinstance(message, str):
+        return "平台未返回文字说明"
+    message = message[:2000]
+    for value in (key, secret, *(body or {}).values()):
+        if isinstance(value, str) and value:
+            message = message.replace(value, "[已隐藏]")
+    message = re.sub(r"https?://\S+|[A-Za-z0-9_=-]{24,}|\d{7,}", "[已隐藏]", message)
+    message = re.sub(
+        r"(?i)(appid|sign|secret|token|password|mobile|phone|密码|姓名|地址)\s*[:=：]\s*[^\s,，;；]+",
+        r"\1=[已隐藏]",
+        message,
+    )
+    return " ".join(message.split())[:500]
+
+
+def rejection_hint(code, operation, message):
+    message = message if isinstance(message, str) else ""
+    if operation == "ship":
+        if any(
+            word in message
+            for word in (
+                "寄件",
+                "发货地址",
+                "ship_name",
+                "ship_mobile",
+                "ship_address",
+                "ship_district",
+            )
+        ):
+            return f"闲管家拒绝发货（错误 {code}）：请店主检查闲管家的默认寄件人、电话和发货地址。"
+        if any(
+            word in message for word in ("快递公司", "物流公司", "express_code", "express_name")
+        ):
+            return f"闲管家拒绝发货（错误 {code}）：请核对快递公司。"
+        if any(word in message for word in ("快递单号", "物流单号", "waybill_no")):
+            return f"闲管家拒绝发货（错误 {code}）：请核对快递单号。"
+    return BUSINESS_ERROR_MESSAGES.get(
+        code, f"闲管家拒绝了请求（错误 {code}），原因尚未确认，请店主核对平台配置和请求参数。"
+    )
 
 
 BUSINESS_ERROR_MESSAGES = {
@@ -88,7 +138,7 @@ class XgjClient:
                 retryable=exc.code == 429 or exc.code >= 500,
             ) from None
         except (urllib.error.URLError, TimeoutError, OSError):
-            raise APIError("平台网络暂不可用，可重试或使用表格导入。", retryable=True) from None
+            raise APIError("平台网络暂不可用，请稍后重试闲管家同步。", retryable=True) from None
         if len(content) > 4 * 1024 * 1024:
             raise APIError("平台响应过大，已停止处理。")
         try:
@@ -100,9 +150,10 @@ class XgjClient:
         if payload["code"] != 0:
             code = payload["code"]
             raise APIRejected(
-                BUSINESS_ERROR_MESSAGES.get(
-                    code, f"闲管家接口返回错误 {code}，请检查店铺授权、套餐或接口权限。"
-                )
+                rejection_hint(code, operation, payload.get("msg")),
+                code=code,
+                operation=operation,
+                diagnostic=private_diagnostic(payload.get("msg"), body, key, secret),
             )
         data = payload.get("data")
         if not isinstance(data, dict):

@@ -35,7 +35,14 @@ from app.shops.models import Shop
 
 from .exports import MAX_PNG_BYTES, private_path, save_image
 from .forms import ProductForm, ReferenceForm, RetentionForm, TradeForm
-from .models import ExportBatch, ExportImage, ProductCost, Trade, WorkspaceSettings
+from .models import (
+    ExportBatch,
+    ExportImage,
+    ProductCost,
+    SupplierDispatch,
+    Trade,
+    WorkspaceSettings,
+)
 from .product_images import trade_image
 from .repayment import PERIODS, due_rows, filter_due
 from .services import (
@@ -123,14 +130,12 @@ def profit_summary(trades):
 @require_GET
 def dashboard(request):
     rows = list(orders())
-    stale_groups: dict[str, dict] = {}
-    for batch in ExportBatch.objects.filter(
-        shop=active_shop(), stale=True, kind="shipping"
-    ).order_by("-created_at", "-pk"):
-        group = stale_groups.setdefault(
-            batch.supplier, {"supplier": batch.supplier, "pk": batch.pk, "batches": []}
-        )
-        group["batches"].append(batch)
+    latest_batches: dict[str, ExportBatch] = {}
+    for batch in ExportBatch.objects.filter(shop=active_shop(), kind="shipping").order_by(
+        "-created_at", "-pk"
+    ):
+        # A newer shipping export supersedes earlier reminders for this supplier.
+        latest_batches.setdefault(batch.supplier, batch)
     unrecovered_returns = [
         t
         for t in rows
@@ -143,7 +148,7 @@ def dashboard(request):
         t
         for t in rows
         if t.status == "COMPLETED"
-        and t.paid_at
+        and (t.paid_at or t.source == "BILL_IMPORT")
         and t.completed_at
         and timezone.localdate(t.completed_at) == today
     ]
@@ -192,7 +197,7 @@ def dashboard(request):
             "soon_due": sum(t.guarantee_fen for t in due["soon"]),
             "overdue": due["overdue"],
             "connection": Connection.objects.filter(shop=active_shop()).first(),
-            "stale_batches": list(stale_groups.values())[:5],
+            "stale_batches": [batch for batch in latest_batches.values() if batch.stale][:5],
             "waiting": sorted(
                 [t for t in rows if t.status == "SHIPPING"], key=lambda t: t.paid_at or t.created_at
             )[:5],
@@ -256,7 +261,8 @@ def listing(request, area="all"):
         now = timezone.now()
         pending_ids = filter_due(orders(), "today", reference_days(), now).values("pk")
         qs = qs.filter(
-            Q(status="COMPLETED", paid_at__isnull=False, completed_at__date=timezone.localdate(now))
+            (Q(paid_at__isnull=False) | Q(source="BILL_IMPORT"))
+            & Q(status="COMPLETED", completed_at__date=timezone.localdate(now))
             | Q(pk__in=pending_ids)
         )
     if params.get("due") in PERIODS:
@@ -466,7 +472,13 @@ def detail(request, pk):
     return render(
         request,
         "workbench/detail.html",
-        {"trade": trade, "form": form, "supplier_choices": supplier_choices(trade.shop)},
+        {
+            "trade": trade,
+            "form": form,
+            "supplier_choices": supplier_choices(trade.shop),
+            "legacy_supplier_dispatch": SupplierDispatch.objects.filter(trade=trade).first(),
+            "legacy_supplier_videos": list(trade.supplier_videos.order_by("created_at")),
+        },
     )
 
 
@@ -521,7 +533,9 @@ def costs(request):
     related_orders = Trade.objects.filter(product=OuterRef("pk"), shop=active_shop()).order_by(
         "-paid_at", "pk"
     )
-    paid_orders = related_orders.filter(paid_at__isnull=False).exclude(status="UNPAID")
+    paid_orders = related_orders.filter(
+        Q(paid_at__isnull=False) | Q(source="BILL_IMPORT", status="COMPLETED")
+    ).exclude(status="UNPAID")
     return render(
         request,
         "workbench/costs.html",
@@ -728,11 +742,6 @@ def export(request, kind):
                 raise BusinessError("请至少选择一个供货商。")
             selected = [t for t in selected if t.supplier in chosen]
         batches = create_batches(selected, kind, request.user)
-        if kind == "shipping":
-            from .supplier_service import ensure_access
-
-            for item in batches:
-                ensure_access(item)
         return render(request, "workbench/export_result.html", {"batches": batches})
     except (BusinessError, APIError, ValueError) as exc:
         messages.error(request, str(exc))
@@ -742,7 +751,7 @@ def export(request, kind):
 @login_required
 @require_GET
 def batch(request, pk):
-    from .supplier_views import batch_context
+    from .supplier_views import batch_text
 
     require_admin(request.user)
     item = get_object_or_404(ExportBatch, pk=pk, shop=active_shop())
@@ -766,7 +775,7 @@ def batch(request, pk):
                 for row in changed
             ),
             "legacy_product": any("title" not in row for row in item.snapshot),
-            **batch_context(item),
+            "shipping_text": batch_text(item),
         },
     )
     response["Cache-Control"] = "no-store"

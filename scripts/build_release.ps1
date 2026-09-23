@@ -6,7 +6,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
 if (-not $OutputDir) { $OutputDir = Join-Path $projectRoot '.local-release/packages' }
-$version = '0.6.0-rc1'
+$version = '0.6.0'
 $status = (& git -C $projectRoot status --porcelain | Out-String).Trim()
 if ($LASTEXITCODE) { throw 'Unable to read Git status.' }
 if ($status) { throw 'Release packaging requires a clean committed worktree.' }

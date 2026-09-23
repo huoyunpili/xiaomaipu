@@ -20,11 +20,11 @@ body:
     id: evidence
     attributes:
       label: 脱敏截图或错误信息
-      description: 不要上传 API 密钥、数据库、供货商访问链接或客户资料。
+      description: 不要上传 API 密钥、数据库、客户资料或旧版本生成的供货商访问链接。
   - type: checkboxes
     id: privacy
     attributes:
       label: 发布前检查
       options:
-        - label: 我已去除客户资料、账号凭据和真实供货商访问链接。
+        - label: 我已去除客户资料、账号凭据和旧版本生成的真实供货商访问链接。
           required: true

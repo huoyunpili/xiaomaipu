@@ -6,7 +6,7 @@ services:
   redis:
     ports: !reset []
   web:
-    image: ${APP_IMAGE:-xianyu-seller:0.4.0}
+    image: ${APP_IMAGE:-xianyu-seller:0.6.0}
     build:
       context: ..
       dockerfile: deployment/Dockerfile
@@ -33,7 +33,7 @@ services:
     restart: unless-stopped
     mem_limit: 768m
   worker:
-    image: ${APP_IMAGE:-xianyu-seller:0.4.0}
+    image: ${APP_IMAGE:-xianyu-seller:0.6.0}
     command: ["celery", "-A", "app.config.celery", "worker", "--loglevel=INFO"]
     environment: *app_environment
     depends_on:
@@ -42,7 +42,7 @@ services:
     restart: unless-stopped
     mem_limit: 768m
   beat:
-    image: ${APP_IMAGE:-xianyu-seller:0.4.0}
+    image: ${APP_IMAGE:-xianyu-seller:0.6.0}
     command: ["celery", "-A", "app.config.celery", "beat", "--schedule=/tmp/celerybeat", "--loglevel=INFO"]
     environment: *app_environment
     depends_on:

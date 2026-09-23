@@ -65,6 +65,7 @@ def test_new_pages_render(client, admin_user, shop):
         "/reports/",
         "/risks/",
         "/risks/sources/new/",
-        "/imports/",
     ):
         assert client.get(url).status_code == 200, url
+    assert client.get("/imports/").status_code == 302
+    assert client.get("/imports/").url == "/integrations/xgj/"

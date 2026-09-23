@@ -35,8 +35,8 @@ def worker(stage, database, media, output):
 
     from app.common.backup import database_fingerprint
     from app.workbench.exports import private_path, save_image
-    from app.workbench.models import ExportBatch, ExportImage, SupplierVideo, Trade
-    from app.workbench.supplier_service import ensure_access, video_path
+    from app.workbench.models import ExportBatch, ExportImage, SupplierAccess, SupplierVideo, Trade
+    from app.workbench.supplier_views import legacy_video_path
 
     if stage == "upgrade":
         executor = MigrationExecutor(connection)
@@ -149,12 +149,17 @@ def worker(stage, database, media, output):
         # Include shipment evidence in backup/restore, not only old export PNGs.
         evidence = b"\x00\x00\x00\x18ftypisom" + b"synthetic-backup-evidence" * 100
         evidence_name = f"supplier-evidence/{rows[0].pk}/restore-probe.mp4"
-        evidence_path = video_path(evidence_name)
+        evidence_path = legacy_video_path(evidence_name)
         evidence_path.parent.mkdir(parents=True, exist_ok=True)
         evidence_path.write_bytes(evidence)
+        access = SupplierAccess.objects.create(
+            batch=batch,
+            expires_at=timezone.now(),
+            revoked_at=timezone.now(),
+        )
         SupplierVideo.objects.create(
             trade=rows[0],
-            access=ensure_access(batch),
+            access=access,
             storage_name=evidence_name,
             original_name="restore-probe.mp4",
             size=len(evidence),
@@ -178,7 +183,7 @@ def worker(stage, database, media, output):
     assert SupplierVideo.objects.count() == 1
     for saved_video in SupplierVideo.objects.all():
         assert (
-            hashlib.sha256(video_path(saved_video.storage_name).read_bytes()).hexdigest()
+            hashlib.sha256(legacy_video_path(saved_video.storage_name).read_bytes()).hexdigest()
             == saved_video.sha256
         )
     from app.orders.models import SalesOrder
