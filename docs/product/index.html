@@ -23,7 +23,7 @@
 <header class="top"><div class="wrap"><a class="brand" href="#overview"><span class="mark" aria-hidden="true">鱼</span>鱼管家</a><nav class="nav" aria-label="页面导航"><a href="#features">五大亮点</a><a href="#workflow">实际怎么用</a><a href="#setup">配置指南</a><a class="nav-cta" href="https://github.com/huoyunpili/xiaomaipu" target="_blank" rel="noopener">获取鱼管家 ↗</a></nav></div></header>
 <main>
 <section class="hero" id="overview"><div class="wrap">
-<div class="hero-grid"><div><p class="eyebrow">鱼小铺后台管理助手</p><h1>发货有条理，<br><span>钱款有着落。</span></h1><p class="lead">为鱼小铺店主，把订单同步、文字发货清单、退款追款和订单利润，放进一个顺手的工作台。</p><div class="actions"><a class="button primary" href="#setup">开始配置与使用 <span aria-hidden="true">→</span></a><a class="button" href="#workflow">看一笔订单怎么走完</a></div><p class="version">0.7.0 桌面版 · Windows 本地部署 · 源码公开</p></div>
+<div class="hero-grid"><div><p class="eyebrow">鱼小铺后台管理助手</p><h1>发货有条理，<br><span>钱款有着落。</span></h1><p class="lead">为鱼小铺店主，把订单同步、文字发货清单、退款追款和订单利润，放进一个顺手的工作台。</p><div class="actions"><a class="button primary" href="#setup">开始配置与使用 <span aria-hidden="true">→</span></a><a class="button" href="#workflow">看一笔订单怎么走完</a></div><p class="version">0.7.1 桌面版 · Windows 本地部署 · 源码公开</p></div>
 <div class="questions"><div class="question"><span class="num">01</span><div><b>今天要发什么，怎样交代给供货商？</b><p>按供货商生成文字清单，复制或下载后直接发送。</p></div></div><div class="question"><span class="num">02</span><div><b>还有多少钱没回来，哪些需要去追？</b><p>回款安排、退款进度和未追回货款，分开看清。</p></div></div><div class="question"><span class="num">03</span><div><b>这单赚了多少，计算依据是什么？</b><p>逐单展开实付、成本、平台费与利润。</p></div></div></div></div>
 <figure class="hero-screen"><div class="window-bar"><span>鱼管家 / 经营工作台</span><span>高清实拍界面 · 演示数据 · 点击放大</span></div><button class="screen-button" data-zoom aria-label="放大经营工作台截图"><img src="images/dashboard-current.png" alt="工作台展示待发货、担保中金额、退款处理和回款安排"></button></figure>
 <p class="caption">截图由当前系统在独立演示环境中原生渲染，采用 3 倍像素高清采集；订单、客户与经营金额均为演示数据，不代表真实经营业绩。点击图片可放大查看。</p><p class="audience">适合：自己经营小店、通过微信与供货商协作、需要垫付采购款并逐单核算的实物卖家。</p>
@@ -42,7 +42,7 @@
 </div></section>
 <section class="block" id="setup"><div class="wrap"><div class="section-head"><div><p class="eyebrow">安装指南</p><h2>一个安装包，<br>完整功能一次装好。</h2></div><p>Windows 本地版不再区分基础版和完整协作版，也不要求用户安装开发工具。</p></div>
 <div class="note"><strong>准备工作：</strong>一台 64 位 Windows 电脑和网络连接。首次同步需要自己的闲管家应用配置、店铺授权及订单查询权限。</div>
-<div class="setup-panel"><h3>双击安装，完成后直接使用</h3><ol><li>从 <a href="https://github.com/huoyunpili/xiaomaipu/releases" target="_blank" rel="noopener">GitHub Releases</a> 下载 <code>鱼管家-0.7.0-安装程序.exe</code>。</li><li>双击安装程序，程序目录使用英文路径，例如 <code>D:\FishManager</code>。内置 Python、PostgreSQL 和任务队列，无需安装 Docker、uv 或其他组件。</li><li>安装完成后自动打开鱼管家桌面窗口，按提示创建自己的店主账号；没有默认账号密码。</li></ol>
+<div class="setup-panel"><h3>双击安装，完成后直接使用</h3><ol><li>从 <a href="https://github.com/huoyunpili/xiaomaipu/releases" target="_blank" rel="noopener">GitHub Releases</a> 下载 <code>鱼管家-0.7.1-安装程序.exe</code>。</li><li>双击安装程序，程序目录使用英文路径，例如 <code>D:\FishManager</code>。内置 Python、PostgreSQL 和任务队列，无需安装 Docker、uv 或其他组件。</li><li>安装完成后自动打开鱼管家桌面窗口，按提示创建自己的店主账号；没有默认账号密码。</li></ol>
 <p>安装后会创建桌面快捷方式，以后从桌面或开始菜单打开“鱼管家”即可，登录 Windows 后也会在托盘自动启动。关闭窗口继续后台同步；从托盘选择“彻底退出”可停止全部服务。订单和私有配置保存在 <code>%LOCALAPPDATA%\XianyuSeller</code>，升级或卸载程序不会主动删除经营数据。</p>
 </div>
 <h3 style="margin-top:38px">安装完成后，把这些信息配好。</h3>

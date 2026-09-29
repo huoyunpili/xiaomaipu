@@ -20,7 +20,7 @@ $configFile = Join-Path $dataRoot 'config.env'
 $stateFile = Join-Path $dataRoot 'runtime.json'
 $logRoot = Join-Path $dataRoot 'logs'
 $launcherPath = Join-Path $appRootPath 'scripts\windows_release.ps1'
-$releaseVersion = '0.7.0'
+$releaseVersion = '0.7.1'
 
 function Write-Info([string]$Message) { Write-Host "[Fish Manager] $Message" }
 function New-RandomHex([int]$Bytes) {
@@ -70,6 +70,11 @@ function Save-InitialConfig {
     )
     [IO.File]::WriteAllLines($configFile,$lines,(New-Object Text.UTF8Encoding($false)))
 }
+function Get-DatabasePort([string]$Value, [int]$Fallback = 55433) {
+    $parsed = 0
+    if ($Value -match '^\d{1,5}$' -and [int]::TryParse($Value, [ref]$parsed) -and $parsed -ge 1 -and $parsed -le 65535) { return $parsed }
+    return $Fallback
+}
 function Import-Config {
     foreach ($line in [IO.File]::ReadAllLines($configFile)) {
         if (-not $line -or $line.StartsWith('#')) { continue }
@@ -81,7 +86,9 @@ function Import-Config {
     $env:FISH_MANAGER_DATA = $dataRoot
     $env:RELEASE_VERSION = $releaseVersion
     $databasePortFile = Join-Path $dataRoot 'database-port.txt'
-    if (Test-Path -LiteralPath $databasePortFile) { $env:POSTGRES_PORT = [IO.File]::ReadAllText($databasePortFile).Trim() }
+    $selectedPort = Get-DatabasePort $env:POSTGRES_PORT
+    if (Test-Path -LiteralPath $databasePortFile) { $selectedPort = Get-DatabasePort ([IO.File]::ReadAllText($databasePortFile).Trim()) $selectedPort }
+    $env:POSTGRES_PORT = [string]$selectedPort
     $urlFile = Join-Path $dataRoot 'local-web-url.txt'
     if (Test-Path -LiteralPath $urlFile) { $env:PUBLIC_BASE_URL = [IO.File]::ReadAllText($urlFile).Trim() }
     $script:baseUrl = [Uri]$env:PUBLIC_BASE_URL
@@ -114,14 +121,61 @@ function Initialize-Postgres {
         [IO.File]::WriteAllText($passwordFile,$env:POSTGRES_PASSWORD,(New-Object Text.UTF8Encoding($false)))
         & (Join-Path $pgBin 'initdb.exe') --pgdata=$pending --username=$env:POSTGRES_USER --pwfile=$passwordFile --auth=scram-sha-256 --encoding=UTF8 --locale=C
         if ($LASTEXITCODE) { throw 'The bundled database could not be initialized.' }
-        Add-Content -LiteralPath (Join-Path $pending 'postgresql.conf') -Value "`nlisten_addresses = '127.0.0.1'`nport = $($env:POSTGRES_PORT)`nmax_connections = 40`n"
+        # A truncated port cache must never become invalid PostgreSQL syntax.
+        $initialPort = Get-DatabasePort $env:POSTGRES_PORT
+        [IO.File]::AppendAllText((Join-Path $pending 'postgresql.conf'), "`nlisten_addresses = '127.0.0.1'`nport = $initialPort`nmax_connections = 40`n", (New-Object Text.UTF8Encoding($false)))
         if (@(Get-ChildItem -LiteralPath $pgData -Force).Count) { throw 'An incomplete database exists. Its files were preserved for recovery.' }
         Remove-Item -LiteralPath $pgData
         Move-Item -LiteralPath $pending -Destination $pgData
     } finally { Remove-Item -LiteralPath $passwordFile -Force -ErrorAction SilentlyContinue }
 }
+function Test-PostgresConfig([string]$ConfigPath) {
+    $process = New-Object Diagnostics.Process
+    $process.StartInfo.FileName = Join-Path $pgBin 'postgres.exe'
+    $process.StartInfo.Arguments = '-D "' + $pgData + '" -c "config_file=' + $ConfigPath + '" -C port'
+    $process.StartInfo.UseShellExecute = $false
+    $process.StartInfo.CreateNoWindow = $true
+    $process.StartInfo.RedirectStandardOutput = $true
+    $process.StartInfo.RedirectStandardError = $true
+    try {
+        [void]$process.Start()
+        $output = $process.StandardOutput.ReadToEndAsync()
+        $errors = $process.StandardError.ReadToEndAsync()
+        if (-not $process.WaitForExit(15000)) { $process.Kill(); $process.WaitForExit(); throw 'Database configuration check timed out.' }
+        $detail = $errors.Result
+        if ($detail) { [IO.File]::AppendAllText((Join-Path $logRoot 'postgres.log'), $detail, (New-Object Text.UTF8Encoding($false))) }
+        return ($process.ExitCode -eq 0 -and (Get-DatabasePort $output.Result.Trim() 0) -ne 0)
+    } finally { $process.Dispose() }
+}
+function Ensure-PostgresConfig {
+    $config = Join-Path $pgData 'postgresql.conf'
+    if (Test-PostgresConfig $config) { return }
+    $original = [IO.File]::ReadAllBytes($config)
+    $encoding = New-Object Text.UTF8Encoding($false, $true)
+    $text = $encoding.GetString($original)
+    # Repair only our installer-owned block, never unrelated/custom settings.
+    $pattern = '(?m)^(listen_addresses = ''127\.0\.0\.1''\r?\n)port = [^\r\n]*(\r?\nmax_connections = 40\r?$)'
+    if ([regex]::Matches($text, $pattern).Count -ne 1) { throw 'Database configuration is invalid. Original preserved; see logs/postgres.log.' }
+    $fixed = [regex]::Replace($text, $pattern, '${1}port = 55433${2}')
+    if ($fixed -eq $text) { throw 'Database configuration is invalid. Original preserved; see logs/postgres.log.' }
+    $candidate = $config + '.repair-' + [Guid]::NewGuid().ToString('N')
+    try {
+        [IO.File]::WriteAllText($candidate, $fixed, $encoding)
+        if (-not (Test-PostgresConfig $candidate)) { throw 'Database configuration repair did not validate. Original preserved; see logs/postgres.log.' }
+        if ([Convert]::ToBase64String([IO.File]::ReadAllBytes($config)) -ne [Convert]::ToBase64String($original)) { throw 'Database configuration changed during repair. Original preserved.' }
+        $backup = $config + '.before-repair-' + [Guid]::NewGuid().ToString('N') + '.bak'
+        [IO.File]::Replace($candidate, $config, $backup)
+        if ([Convert]::ToBase64String([IO.File]::ReadAllBytes($backup)) -ne [Convert]::ToBase64String($original)) { throw 'Database configuration backup verification failed.' }
+        if (-not (Test-PostgresConfig $config)) {
+            [IO.File]::Copy($backup, $config, $true)
+            throw 'Database configuration validation failed. Original restored.'
+        }
+        Write-Info 'Repaired invalid database port configuration; original configuration backed up.'
+    } finally { if (Test-Path -LiteralPath $candidate) { Remove-Item -LiteralPath $candidate -Force } }
+}
 function Start-Postgres {
     if (Test-PostgresRunning) { return }
+    Ensure-PostgresConfig
     & (Join-Path $pgBin 'pg_ctl.exe') start -D $pgData -l (Join-Path $logRoot 'postgres.log') -o "-p $($env:POSTGRES_PORT)" -w -t 180
     if ($LASTEXITCODE) { throw 'The bundled database did not start. See logs/postgres.log.' }
 }

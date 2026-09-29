@@ -69,8 +69,8 @@ def test_windows_installer_is_the_single_complete_user_path():
     )
     assert "'Install' {\n        Stop-All\n        Remove-ObsoleteTunnel" in runtime_script
     assert "LicenseFile={#SourceRoot}\\LICENSE" in installer
-    assert "AppVersion=0.7.0" in installer
-    assert "OutputBaseFilename=鱼管家-0.7.0-安装程序" in installer
+    assert "AppVersion=0.7.1" in installer
+    assert "OutputBaseFilename=鱼管家-0.7.1-安装程序" in installer
     assert 'Filename: "{app}\\FishManager.exe"' in installer
     assert "{userstartup}" in installer
     assert "{userdesktop}\\鱼管家" in installer
@@ -197,6 +197,8 @@ def test_interrupted_database_initialization_is_retried_without_publishing_parti
 $ErrorActionPreference = 'Stop'
 $tokens = $null; $parseErrors = $null
 $ast = [System.Management.Automation.Language.Parser]::ParseFile('{launcher}', [ref]$tokens, [ref]$parseErrors)
+$helper = $ast.Find({{ param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Get-DatabasePort' }}, $true)
+Invoke-Expression $helper.Extent.Text
 $node = $ast.Find({{ param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Initialize-Postgres' }}, $true)
 Invoke-Expression $node.Extent.Text
 $dataRoot = $PSScriptRoot

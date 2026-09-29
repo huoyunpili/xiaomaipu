@@ -8,7 +8,7 @@
 [Setup]
 AppId={{6B9201EF-7FA7-47CC-8E97-8ACB452F2A3F}
 AppName=鱼管家
-AppVersion=0.7.0
+AppVersion=0.7.1
 AppPublisher=阿栋
 AppPublisherURL=https://github.com/huoyunpili/xiaomaipu
 LicenseFile={#SourceRoot}\LICENSE
@@ -22,7 +22,7 @@ Compression=lzma2/fast
 SolidCompression=yes
 WizardStyle=modern
 OutputDir={#OutputDir}
-OutputBaseFilename=鱼管家-0.7.0-安装程序
+OutputBaseFilename=鱼管家-0.7.1-安装程序
 UninstallDisplayIcon={app}\FishManager.ico
 SetupLogging=yes
 CloseApplications=no
