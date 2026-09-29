@@ -650,7 +650,7 @@ wheels = [
 
 [[package]]
 name = "xianyu-seller-backoffice"
-version = "0.6.0"
+version = "0.7.0"
 source = { virtual = "." }
 dependencies = [
     { name = "celery", extra = ["redis"] },

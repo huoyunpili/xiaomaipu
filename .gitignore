@@ -5,6 +5,7 @@
 *.secret
 api_key.txt
 config.env
+xgj-api.json
 private-media/
 backups/
 *.dump

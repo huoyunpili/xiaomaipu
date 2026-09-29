@@ -1,5 +1,5 @@
 {% extends 'base.html' %}{% block content %}<h1>设置</h1><p>经营数据保存在本机。</p><div class="wb-settings">
-<a class="wb-panel" href="{% url 'xgj-home' %}"><h2>↻ 闲管家 API</h2><p>连接店铺、同步起始日、运行记录</p></a>
+<a class="wb-panel" href="{% url 'xgj-home' %}"><h2>↻ 闲管家 API</h2><p>填写 AppKey / AppSecret、验证连接、同步订单</p></a>
 <a class="wb-panel" href="{% url 'wb-costs' %}"><h2>▣ 商品与供应商</h2><p>每种类型维护一次成本</p></a>
 <a class="wb-panel" href="{% url 'xgj-home' %}#history-import"><h2>↻ 历史订单同步</h2><p>先把历史订单导入闲管家，再由鱼管家统一同步，不再上传本地表格</p></a>
 <a class="wb-panel" href="{% url 'account-settings' %}"><h2>◉ 我的账号</h2><p>修改自己的用户名和密码</p></a>

@@ -91,6 +91,7 @@ class Trade(BaseModel):
     refund_type = models.PositiveSmallIntegerField(null=True, blank=True)
     refunded_fen = models.PositiveBigIntegerField(null=True, blank=True)
     refund_success_confirmed_at = models.DateTimeField(null=True, blank=True)
+    review_resolution = models.JSONField(default=dict, blank=True)
     synced_at = models.DateTimeField(null=True)
     refund_waybill = models.CharField(max_length=100, blank=True)
     refund_note = models.CharField(max_length=1000, blank=True)
@@ -104,6 +105,12 @@ class Trade(BaseModel):
             models.Index(fields=["status", "paid_at"]),
             models.Index(fields=["completed_at"]),
         ]
+
+    @property
+    def active_review(self):
+        from .review import active_resolution
+
+        return active_resolution(self, self.platform) if self.platform_id else {}
 
     @property
     def display_condition(self):

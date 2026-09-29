@@ -6,7 +6,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 source = ROOT / "docs/product/index.html"
 page = source.read_text(encoding="utf-8")
-page = page.replace("../鱼管家使用与配置手册.html", "鱼管家使用与配置手册.html")
+manual_url = "https://github.com/huoyunpili/xiaomaipu/blob/main/docs/manual/index.html"
+page = page.replace('href="../manual/index.html"', f'href="{manual_url}"')
+page = page.replace('href="../鱼管家使用与配置手册.html"', f'href="{manual_url}"')
 for path in sorted((ROOT / "docs/product/images").glob("*-current.png")):
     encoded = base64.b64encode(path.read_bytes()).decode("ascii")
     page = page.replace(f"images/{path.name}", f"data:image/png;base64,{encoded}")

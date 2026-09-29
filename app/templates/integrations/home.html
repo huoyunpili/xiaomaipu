@@ -2,11 +2,24 @@
 <h1>闲管家订单同步</h1>
 <p>平台订单先保存为外部核对事实。同号人工订单会安全关联；库存、发货、到账和退款仍由经营流程确认。</p>
 {% if user.is_shop_admin %}
-<form method="post" action="{% url 'xgj-operate' 'connect' %}">{% csrf_token %}<button>验证授权店铺</button></form>
+<section class="card" aria-labelledby="api-setup-title">
+  <h2 id="api-setup-title">手动填写 API 信息</h2>
+  <p>使用闲管家的 AppKey 和 AppSecret 接入。本客户端采用手动 API 配置方式，无需扫码。</p>
+  {% if credentials_error %}<p class="notice">{{ credentials_error }}</p>{% elif credentials_ready %}<p role="status">API 信息已配置，密钥已隐藏。可直接验证连接，或填写新信息更新配置。</p>{% else %}<p>首次使用请填写下方两项，保存后验证 API 连接。</p>{% endif %}
+  <form id="api-credentials" method="post" action="{% url 'xgj-operate' 'save-api' %}" autocomplete="off">
+    {% csrf_token %}{{ credentials_form.as_p }}
+  </form>
+  <div class="actions">
+    <button form="api-credentials">保存 API 配置</button>
+    <form method="post" action="{% url 'xgj-operate' 'connect' %}">{% csrf_token %}<button class="quiet" {% if not credentials_ready %}disabled{% endif %}>验证 API 连接</button></form>
+  </div>
+  <p class="muted">配置信息仅保存在本机。验证成功即自动同步，之后每 5 分钟更新，无需设置同步开关。更换 API 信息后请重新验证连接。</p>
+</section>
 {% endif %}
 {% if connection %}
 <section class="card">
-  <h2>同步边界</h2>
+  <h2>自动同步状态</h2>
+  <p>鱼管家运行时会在后台自动更新订单；关闭窗口后继续同步，彻底退出或关机后暂停，下次启动后继续。断网或接口异常会保留本地订单并自动重试。</p>
   {% if sync_start_local %}
   <p>自动同步起始日：<strong>{{ sync_start_local }}</strong>（北京时间当日 00:00，已固定）</p>
   <p>最近完整同步：{{ connection.last_success|default:'尚未完成' }} · 自动同步：{{ connection.enabled|yesno:'已开启,已关闭' }}</p>
@@ -20,15 +33,13 @@
   </form>
   {% endif %}
   {% endif %}
-  {% if valid_until %}<p>平台授权有效期：{{ valid_until }}{% if connection.service_info.is_trial %}（试用）{% endif %}</p>{% endif %}
+  {% if valid_until %}<p>店铺接口有效期：{{ valid_until }}{% if connection.service_info.is_trial %}（试用）{% endif %}</p>{% endif %}
   {% if connection.error %}<p class="notice">{{ connection.error }}</p>{% endif %}
 </section>
 {% if user.is_shop_admin and sync_start_local %}
 <div class="actions">
   <form method="post" action="{% url 'xgj-operate' 'sync' %}">{% csrf_token %}<button>立即同步</button></form>
   <form method="post" action="{% url 'xgj-operate' 'rescan' %}">{% csrf_token %}<button>重扫接入日起订单</button></form>
-  <form method="post" action="{% url 'xgj-operate' 'enable' %}">{% csrf_token %}<button>开启每 5 分钟同步</button></form>
-  <form method="post" action="{% url 'xgj-operate' 'disable' %}">{% csrf_token %}<button class="quiet">关闭自动同步</button></form>
 </div>
 <section class="card" id="history-import">
   <h2>从闲管家导入历史订单</h2>

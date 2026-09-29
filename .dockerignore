@@ -21,6 +21,7 @@ backups
 **/backups
 **/api_key.txt
 **/config.env
+**/xgj-api.json
 **/*.secret
 **/*.dump
 **/*.log

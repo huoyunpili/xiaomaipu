@@ -484,6 +484,77 @@ def detail(request, pk):
 
 @login_required
 @require_http_methods(["GET", "POST"])
+def review(request, pk):
+    from .review import ReviewForm, context, fingerprint, revoke_review, save_review
+
+    trade = get_object_or_404(orders(), pk=pk)
+    token = fingerprint(trade.platform) if trade.platform_id else ""
+    form = ReviewForm(initial={"fingerprint": token})
+    action_error = ""
+    if request.method == "POST":
+        require_admin(request.user)
+        operation = request.POST.get("operation")
+        try:
+            if operation == "refresh":
+                if not trade.platform_id:
+                    raise BusinessError("此订单未关联平台，无法重新同步。")
+                refresh_order(trade.platform)
+                refresh_refund(actor=request.user, row_id=trade.platform_id)
+                messages.success(request, "已重新读取订单和售后信息。请查看当前状态及冲突说明。")
+                return redirect("wb-review", pk=trade.pk)
+            if operation == "revoke":
+                revoke_review(
+                    trade=trade, actor=request.user, expected=request.POST.get("fingerprint")
+                )
+                messages.success(
+                    request, "已撤销人工核对结果，按当前平台信息重新判断。历史记录保留。"
+                )
+                return redirect("wb-review", pk=trade.pk)
+            if operation != "save":
+                raise BusinessError("未知的核对操作。")
+            form = ReviewForm(request.POST)
+            if form.is_valid():
+                data = form.cleaned_data
+                result = save_review(
+                    trade=trade,
+                    actor=request.user,
+                    expected=data["fingerprint"],
+                    result=data["result"],
+                    amount=int(data["amount"] * 100) if data["amount"] is not None else None,
+                    basis=data["basis"],
+                )
+                messages.success(
+                    request,
+                    "核对已完成，订单已归入已退款。"
+                    if result.status == "REFUNDED"
+                    else "核对记录已保存，仍需处理的问题会继续保留为待核对。",
+                )
+                return redirect("wb-review", pk=trade.pk)
+        except (APIError, BusinessError) as exc:
+            if operation == "save" and form.is_bound:
+                form.add_error(None, str(exc))
+            else:
+                action_error = str(exc)
+            if operation == "refresh":
+                messages.warning(
+                    request, "重新同步未全部成功；以下展示本机最新已保存的信息，未确认任何退款。"
+                )
+        trade = get_object_or_404(orders(), pk=pk)
+        token = fingerprint(trade.platform) if trade.platform_id else ""
+        if form.is_bound:
+            redisplayed = request.POST.copy()
+            redisplayed["fingerprint"] = token
+            redisplayed.pop("confirmed", None)
+            form.data = redisplayed
+    return render(
+        request,
+        "workbench/review.html",
+        {**context(trade), "form": form, "fingerprint": token, "action_error": action_error},
+    )
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
 def costs(request):
     form = ProductForm(request.POST or None)
     wants_json = "application/json" in request.headers.get("Accept", "")
@@ -738,9 +809,8 @@ def export(request, kind):
         selected = list(orders().filter(pk__in=[t.pk for t in selected]))
         if kind == "shipping" and request.POST.get("supplier_filter") == "1":
             chosen = request.POST.getlist("export_supplier")
-            if not chosen:
-                raise BusinessError("请至少选择一个供货商。")
-            selected = [t for t in selected if t.supplier in chosen]
+            if chosen:
+                selected = [t for t in selected if t.supplier in chosen]
         batches = create_batches(selected, kind, request.user)
         return render(request, "workbench/export_result.html", {"batches": batches})
     except (BusinessError, APIError, ValueError) as exc:

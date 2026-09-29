@@ -32,6 +32,8 @@ uv run python manage.py runserver 127.0.0.1:8765
 uv run python scripts/check.py
 ```
 
+桌面启动、托盘或安装程序改动还需运行 `node --test tests/desktop_shell.test.cjs`，并使用隔离数据验证首次启动、重复打开、退出和升级。Windows 安装包构建机需要 Node.js、uv 和 Inno Setup；运行 `scripts/build_windows_installer.ps1` 会先执行这些检查。普通用户无需安装这些开发工具。
+
 ## 提交改进
 
 1. 较大改动先用 Issue 说明要解决的经营问题。
@@ -41,7 +43,13 @@ uv run python scripts/check.py
 5. 运行 `uv run python scripts/check.py`；安装程序改动还要执行对应的 Windows 安装包检查。
 6. PR 写清改动、验证结果和剩余限制；涉及页面时附脱敏截图。
 
-不要提交 `.env.local`、`config.env`、`.local`、备份、真实订单导出或经营视频。不要添加固定公网访问令牌和个人电脑绝对路径。
+不要提交 `.env.local`、`config.env`、`xgj-api.json`、`.local`、备份、真实订单导出或经营视频。不要添加固定公网访问令牌和个人电脑绝对路径。
+
+### 公用版本的 API 接入
+
+公用版本必须保留“设置 → 闲管家 API”中的 AppKey / AppSecret 填写、保存与连接验证入口，不依赖鱼管家扫码授权流程。普通用户的首次接入说明统一使用这个入口，不要求手工编辑配置文件。公版与私版均在验证成功后立即自动同步，之后每 5 分钟更新；不得再要求用户手动开启同步。
+
+Windows 安装版将页面保存的凭据放在用户数据目录的 `xgj-api.json`，兼容旧 `config.env`；不将个人凭据写入源码或安装包。发布前运行 `tests/test_api_credentials.py`、`tests/test_integrations.py` 和 `tests/test_windows_installer.py`，检查首次填写、旧配置沿用、管理员权限、密钥不回显、修改后立即生效，以及配置路径位于用户数据目录。发布构建仍需通过完整质量检查和对应安装验收。
 
 请只提交自己有权提供的代码和素材；提交贡献表示你按照 [DCO](DCO) 作出声明，并允许项目按照 Apache License 2.0 整合、修改和发布贡献。第三方代码和素材必须标明来源及许可证，不兼容的内容不能提交。
 

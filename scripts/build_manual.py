@@ -11,6 +11,11 @@ for path in (ROOT / "docs/product/images").glob("*.png"):
     if reference in page:
         encoded = base64.b64encode(path.read_bytes()).decode("ascii")
         page = page.replace(reference, f"data:image/png;base64,{encoded}")
+for path in (ROOT / "docs/manual/images").glob("*.png"):
+    reference = f"images/{path.name}"
+    if reference in page:
+        encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+        page = page.replace(reference, f"data:image/png;base64,{encoded}")
 page = page.replace(
     "<!-- TOKENS -->",
     "<style>" + (ROOT / "app/static/tokens.css").read_text(encoding="utf-8") + "</style>",

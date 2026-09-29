@@ -21,8 +21,8 @@ def sync_orders(run_id):
         run = SyncRun.objects.get(pk=run_id)
         if run.status == "RETRY":
             sync_orders.apply_async(args=[str(run.pk)], countdown=30 * run.attempts)
-        else:
-            Connection.objects.filter(pk=run.connection_id).update(enabled=False)
+        # A failed run must not permanently turn off the next scheduled attempt.
+        # Credential replacement is paused explicitly until connection verification.
     except Exception:
         # execute_sync only lets the current lease generation mark the run failed.
         raise
@@ -107,7 +107,7 @@ def poll_orders():
             try:
                 enqueue(queue_sync(connection))
             except APIError as exc:
-                Connection.objects.filter(pk=connection.pk).update(enabled=False, error=str(exc))
+                Connection.objects.filter(pk=connection.pk).update(error=str(exc))
     process_notices()
 
 

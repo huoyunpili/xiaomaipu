@@ -1,15 +1,93 @@
 import hashlib
+from unittest.mock import patch
 
 import pytest
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 
+from app.common.business import BusinessError
 from app.workbench.models import SupplierAccess, SupplierVideo
 from app.workbench.services import create_batches
 from app.workbench.supplier_views import batch_text, legacy_video_path
 from tests.test_workspace import connection, make_trade  # noqa: F401
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.mark.parametrize("chosen", [[], ["供应商甲"]])
+def test_shipping_supplier_filter_is_optional(connection, admin_user, client, chosen):  # noqa: F811
+    unassigned = make_trade(connection, number="100001")
+    assigned = make_trade(connection, number="100002")
+    assigned.supplier = "供应商甲"
+    assigned.save(update_fields=["supplier"])
+    client.force_login(admin_user)
+    with patch("app.workbench.views.refresh_order"):
+        response = client.post(
+            reverse("wb-export", args=["shipping"]),
+            {
+                "selected": [str(unassigned.pk), str(assigned.pk)],
+                "supplier_filter": "1",
+                "export_supplier": chosen,
+            },
+        )
+    assert response.status_code == 200
+    batches = response.context["batches"]
+    assert {b.supplier for b in batches} == ({"供应商甲"} if chosen else {"", "供应商甲"})
+    if not chosen:
+        batch = next(b for b in batches if not b.supplier)
+        assert "未分配供应商" in response.content.decode()
+        download = client.get(reverse("wb-batch-text", args=[batch.pk]))
+        assert download.status_code == 200
+        assert unassigned.number in download.content.decode()
+        assert "未分配供应商" in download.content.decode()
+        unassigned.refresh_from_db()
+        assert unassigned.supplier == ""
+
+
+@pytest.mark.parametrize("field,value", [("phone", ""), ("address", "***"), ("spec", "")])
+def test_unassigned_shipping_still_requires_complete_details(connection, admin_user, field, value):  # noqa: F811
+    trade = make_trade(connection)
+    setattr(trade, field, value)
+    trade.save(update_fields=[field])
+    with pytest.raises(BusinessError, match="完整收件信息"):
+        create_batches([trade], "shipping", admin_user)
+
+
+@pytest.mark.browser
+@pytest.mark.django_db(transaction=True)
+def test_browser_shipping_without_supplier(connection, admin_user, client, live_server, tmp_path):  # noqa: F811
+    from playwright.sync_api import expect, sync_playwright
+
+    trade = make_trade(connection)
+    client.force_login(admin_user)
+    with patch("app.workbench.views.refresh_order"), sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        context = browser.new_context()
+        context.add_cookies(
+            [
+                {
+                    "name": "sessionid",
+                    "value": client.cookies["sessionid"].value,
+                    "url": live_server.url,
+                }
+            ]
+        )
+        page = context.new_page()
+        page.goto(live_server.url + reverse("wb-shipping"))
+        expect(
+            page.get_by_text("供货商筛选（可选；不勾选则导出所选订单，含未分配供应商）")
+        ).to_be_visible()
+        page.locator(f'input[name="selected"][value="{trade.pk}"]').check()
+        page.get_by_role("button", name="导出发货单").click()
+        expect(page.get_by_role("heading", name="清单已生成")).to_be_visible()
+        page.get_by_role("link", name="未分配供应商 · 1 单 →").click()
+        expect(page.locator("#shipping-text")).to_contain_text(trade.number)
+        with page.expect_download() as downloaded:
+            page.get_by_role("link", name="下载 TXT").click()
+        path = tmp_path / "shipping.txt"
+        downloaded.value.save_as(path)
+        assert trade.number in path.read_text(encoding="utf-8")
+        browser.close()
 
 
 def shipping_batch(connection, admin_user):  # noqa: F811

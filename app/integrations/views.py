@@ -5,7 +5,6 @@ import time
 from datetime import UTC, date, datetime
 
 from django import forms
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -13,6 +12,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.debug import sensitive_post_parameters, sensitive_variables
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from app.accounts.policies import require_admin, require_operator
@@ -22,6 +22,8 @@ from app.common.forms import to_fen
 from app.inventory.models import StockLot
 
 from .client import APIError, signature
+from .credentials import read_credentials, save_credentials
+from .forms import ApiCredentialsForm
 from .models import Connection, ExternalFactApplication, PlatformOrder, PushNotice, SyncRun
 from .services import (
     BEIJING,
@@ -38,6 +40,12 @@ from .tasks import enqueue
 @login_required
 @require_GET
 def home(request):
+    credentials_ready, credentials_error = False, ""
+    if request.user.is_shop_admin:
+        try:
+            credentials_ready = all(read_credentials())
+        except BusinessError as exc:
+            credentials_error = str(exc)
     connection = Connection.objects.first()
     end = connection.service_info.get("valid_end_time") if connection else None
     valid_until = (
@@ -62,6 +70,9 @@ def home(request):
         "integrations/home.html",
         {
             "connection": connection,
+            "credentials_form": ApiCredentialsForm(),
+            "credentials_ready": credentials_ready,
+            "credentials_error": credentials_error,
             "valid_until": valid_until,
             "latest_run": latest_run,
             "latest_data_run": latest_data_run,
@@ -90,12 +101,36 @@ def home(request):
 
 @login_required
 @require_POST
+@sensitive_post_parameters("app_key", "app_secret")
 def operate(request, operation):
     require_admin(request.user)
     try:
-        if operation == "connect":
-            connect(actor=request.user)
-            messages.success(request, "授权店铺验证成功。")
+        if operation == "save-api":
+            form = ApiCredentialsForm(request.POST)
+            if not form.is_valid():
+                raise BusinessError(
+                    " ".join(str(error) for errors in form.errors.values() for error in errors)
+                )
+            changed = save_credentials(
+                actor=request.user,
+                key=form.cleaned_data["app_key"],
+                secret=form.cleaned_data["app_secret"],
+            )
+            messages.success(
+                request,
+                "API 配置已保存并立即生效。验证 API 连接成功后将自动同步订单。"
+                if changed
+                else "已保留现有 API 配置。",
+            )
+        elif operation == "connect":
+            connection = connect(actor=request.user)
+            if connection.enabled:
+                enqueue(queue_sync(connection))
+                messages.success(
+                    request, "API 连接验证成功，已自动启动订单同步，之后每 5 分钟更新。"
+                )
+            else:
+                messages.warning(request, connection.error)
         else:
             connection = get_object_or_404(Connection)
             if operation in ("sync", "rescan", "history-import"):
@@ -122,7 +157,9 @@ def operate(request, operation):
                 except ValueError as exc:
                     raise BusinessError("请选择有效的自动同步起始日。") from exc
                 confirm_sync_start(actor=request.user, connection=connection, start_date=start_date)
-                messages.success(request, "自动同步起始日已固定。")
+                connection = connect(actor=request.user)
+                enqueue(queue_sync(connection))
+                messages.success(request, "自动同步起始日已固定，已自动启动订单同步。")
             elif operation in ("enable", "disable"):
                 if operation == "enable" and not connection.sync_start_at:
                     raise BusinessError("请先确认自动同步起始日。")
@@ -216,14 +253,21 @@ def detail(request, row_id):
 
 @csrf_exempt
 @require_POST
+@sensitive_variables()
 def webhook(request):
-    if len(request.body) > 16384 or not settings.XGJ_APP_SECRET:
+    if len(request.body) > 16384:
+        return JsonResponse({"result": "fail"}, status=400)
+    try:
+        key, secret = read_credentials()
+    except BusinessError:
+        return JsonResponse({"result": "fail"}, status=400)
+    if not secret:
         return JsonResponse({"result": "fail"}, status=400)
     try:
         stamp = int(request.GET.get("timestamp", ""))
-        if abs(time.time() - stamp) > 300 or request.GET.get("appid") != settings.XGJ_APP_KEY:
+        if abs(time.time() - stamp) > 300 or request.GET.get("appid") != key:
             raise ValueError
-        expected = signature(settings.XGJ_APP_KEY, settings.XGJ_APP_SECRET, stamp, request.body)
+        expected = signature(key, secret, stamp, request.body)
         supplied = request.GET.get("sign", "")
         if not supplied.isascii() or not hmac.compare_digest(expected, supplied):
             raise ValueError

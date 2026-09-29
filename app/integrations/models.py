@@ -34,7 +34,9 @@ class Connection(BaseModel):
     @property
     def sync_warning(self):
         if not self.enabled:
-            return "自动同步已暂停，订单数量可能落后于平台，请到同步设置中恢复。"
+            return (
+                "自动同步尚未就绪，订单数量可能落后于平台，请到闲管家 API 页面验证连接或查看原因。"
+            )
         if not self.last_success:
             return "尚未成功同步，当前订单可能不完整，请检查同步任务。"
         if timezone.now() - self.last_success > timedelta(minutes=10):

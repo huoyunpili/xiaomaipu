@@ -113,6 +113,7 @@ CELERY_BEAT_SCHEDULE = {
 }
 XGJ_APP_KEY = os.environ.get("XGJ_APP_KEY", "")
 XGJ_APP_SECRET = os.environ.get("XGJ_APP_SECRET", "")
+XGJ_CREDENTIALS_FILE: Path | None = BASE_DIR / ".local" / "xgj-api.json"
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

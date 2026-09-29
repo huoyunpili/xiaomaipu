@@ -14,7 +14,7 @@ from .models import ExportBatch, SupplierVideo
 
 def batch_text(batch):
     """Render the only supplier hand-off supported by the public edition."""
-    lines = [f"发货单 | {batch.supplier}", f"共 {len(batch.snapshot)} 单", ""]
+    lines = [f"发货单 | {batch.supplier or '未分配供应商'}", f"共 {len(batch.snapshot)} 单", ""]
     for index, row in enumerate(batch.snapshot, 1):
         lines.extend(
             [

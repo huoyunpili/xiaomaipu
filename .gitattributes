@@ -9,3 +9,5 @@
 /.env.local export-ignore
 /api_key.txt export-ignore
 /config.env export-ignore
+
+/xgj-api.json export-ignore

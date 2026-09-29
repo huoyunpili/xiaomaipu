@@ -1,0 +1,46 @@
+{% extends 'base.html' %}{% load workbench %}{% block content %}
+<p><a href="{% url 'wb-detail' trade.pk %}">← 返回订单详情</a></p>
+<h1>核对订单</h1>
+{% if action_error %}<p role="alert" class="wb-warning">{{ action_error }}</p>{% endif %}
+<p><strong>{{ trade.title }}</strong></p><p>订单号：<strong>{{ trade.number }}</strong> · 当前状态：{{ trade.get_status_display }}</p>
+{% if trade.issue %}<p class="wb-warning">{{ trade.issue }}</p>{% endif %}
+<section class="wb-panel">
+  <h2>1. 查看平台记录与冲突</h2>
+  <p>以下是本机最近一次读取的接口信息。核对时请按上方订单号打开闲鱼订单的退款详情。</p>
+  <dl class="wb-facts">
+    <div><dt>实付金额</dt><dd>{% if paid != None %}¥{{ paid|money }}{% else %}未提供{% endif %}</dd></div>
+    <div><dt>订单状态</dt><dd>{{ order_status }}</dd></div>
+    <div><dt>退款状态字段</dt><dd>{{ refund_status }}</dd></div>
+    <div><dt>接口已退款金额</dt><dd>{% if refund_amount != None %}¥{{ refund_amount|money }}{% else %}未提供{% endif %}</dd></div>
+    <div><dt>退款完成时间</dt><dd>{{ refund_time|date:'Y-m-d H:i:s'|default:'未提供' }}</dd></div>
+    <div><dt>最近订单同步</dt><dd>{{ trade.synced_at|date:'Y-m-d H:i:s'|default:'未同步' }}</dd></div>
+  </dl>
+  {% for problem in problems %}<p class="wb-alert">{{ problem }}</p>{% endfor %}
+  {% if user.is_shop_admin and trade.platform_id %}<form method="post">{% csrf_token %}<input type="hidden" name="operation" value="refresh"><button>重新同步订单和退款信息</button></form>{% endif %}
+  <p class="muted">重新同步只查询平台，不提交退款或发货。若金额是 0，请在平台退款详情确认实际到账退款，不能直接把 0 当成“未退款”。</p>
+</section>
+<section class="wb-panel">
+  <h2>2. 在闲鱼核对这三项</h2>
+  <ol><li>订单号是否与本页一致。</li><li>退款是否已经成功，还是申请中、被拒绝或已撤销。</li><li>实际已退金额是多少，是否等于全部实付金额。</li></ol>
+  <p>买家退款与供应商货款追回是两件事。本页不会登记供应商已归还货款。</p>
+</section>
+<section class="wb-panel">
+  <h2>3. 记录核对结果</h2>
+  {% if trade.review_resolution %}
+    {% if resolution_active %}<p role="status">本单已有人工核对记录，见下方历史。仍有问题时可补充记录；确认填写有误时可撤销。</p>{% else %}<p class="wb-warning">平台信息在上次核对后已变化。旧结果仅作历史记录，不能继续覆盖新的平台信息，请重新核对。</p>{% endif %}
+  {% endif %}
+  {% if not can_confirm_full %}<p class="wb-warning">当前接口证据尚不足以按全额退款结案。请先重新同步；如仍有冲突，可填写实际情况并选择“保留待核对”。</p>{% endif %}
+  <p>确认全额退款时，必须填写等于实付的实际退款金额，并有平台退款成功状态和时间。部分退款的利润结算暂不支持，记录后仍保留待核对，不会被算成全额退款。</p>
+  {% if user.is_shop_admin and trade.platform_id %}
+    <form method="post" class="wb-edit">{% csrf_token %}<input type="hidden" name="operation" value="save">{{ form.as_p }}<button>保存核对结果</button></form>
+    {% if trade.review_resolution %}<form method="post">{% csrf_token %}<input type="hidden" name="operation" value="revoke"><input type="hidden" name="fingerprint" value="{{ fingerprint }}"><p><button class="quiet">撤销人工核对结果</button></p></form>{% endif %}
+  {% else %}<p>核对结果需由管理员记录。未关联平台的导入订单，请先补齐平台来源。</p>{% endif %}
+</section>
+<section class="wb-panel">
+  <h2>核对历史</h2>
+  {% for event in history %}<article>
+    <p><strong>{{ event.action_label }}</strong> · {{ event.occurred_at|date:'Y-m-d H:i:s' }} · {{ event.actor.display_name|default:event.actor.username }}</p>
+    {% if event.details.result %}<p>结果：{% if event.details.result == 'full' %}已确认全额退款{% else %}仍待处理{% endif %}{% if event.details.amount != None %} · 核实已退金额 ¥{{ event.details.amount|money }}{% endif %}</p><p style="overflow-wrap:anywhere">依据：{{ event.details.basis }}</p>{% endif %}
+  </article>{% empty %}<p>尚无人工核对记录。</p>{% endfor %}
+</section>
+{% endblock %}

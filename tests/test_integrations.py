@@ -77,7 +77,7 @@ def test_connect_requires_admin_and_unique_authorization(operator, admin_user, s
         connect(actor=operator, client=client)
     assert not client.call.called
     con = connect(actor=admin_user, client=client)
-    assert con.seller_id == "1234" and not con.enabled
+    assert con.seller_id == "1234" and con.enabled
     client.call.return_value = {"list": [{"is_valid": False, "authorize_id": 1234}]}
     with pytest.raises(APIError):
         connect(actor=admin_user, client=client)
@@ -203,7 +203,7 @@ def test_queue_outage_and_authorization_failure(connection):
     with patch("app.integrations.client.XgjClient.call", side_effect=APIError("授权失效")):
         sync_orders(str(run.pk))
     connection.refresh_from_db()
-    assert not connection.enabled and connection.error == "授权失效"
+    assert connection.enabled and connection.error == "授权失效"
 
 
 @override_settings(XGJ_APP_KEY="test-key", XGJ_APP_SECRET="test-secret")
@@ -229,7 +229,7 @@ def test_client_explains_permission_error_and_stops_retrying():
     with patch("urllib.request.build_opener", return_value=opener), pytest.raises(APIError) as exc:
         XgjClient().call("orders")
     assert not exc.value.retryable
-    assert "100008" in str(exc.value) and "停止自动重试" in str(exc.value)
+    assert "100008" in str(exc.value) and "本次同步已停止" in str(exc.value)
 
 
 def test_platform_pages_show_actionable_orders_and_collapse_recovered_errors(

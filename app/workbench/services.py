@@ -218,6 +218,13 @@ def project(row, raw=None, *, include_history=False):
         trade.source = "API_HISTORY" if include_history else "API_CARRY"
     trade.platform = row
     trade.status, trade.issue = classify(data)
+    from .review import active_resolution, full_refund_allowed
+
+    resolution = active_resolution(trade, row)
+    if resolution.get("result") == "full" and full_refund_allowed(row):
+        trade.status, trade.issue = "REFUNDED", ""
+    elif resolution.get("result") == "pending":
+        trade.status, trade.issue = "REVIEW", "已记录核对结果，问题尚未解决；查看核对记录继续处理"
     if (
         trade.refund_success_confirmed_at
         and trade.status == "REVIEW"
@@ -296,8 +303,11 @@ def project(row, raw=None, *, include_history=False):
         )
         refund_type = row.refund_snapshot.get("refund_type", trade.refund_type)
         trade.refund_type = refund_type if refund_type in (1, 2) else None
-    if type(data.get("refund_amount")) is int:
-        trade.refunded_fen = data["refund_amount"]
+    trade.refunded_fen = (
+        data.get("refund_amount") if type(data.get("refund_amount")) is int else None
+    )
+    if resolution.get("result") == "full" and trade.status == "REFUNDED":
+        trade.refunded_fen = resolution["amount"]
     if trade.refund_success_confirmed_at and trade.status == "REFUNDED" and not trade.refunded_fen:
         trade.refunded_fen = None
     if created or trade.status != previous_status:
@@ -470,13 +480,13 @@ def create_batches(trades, kind, actor):
             if trade.status != "SHIPPING" or not trade.paid_at:
                 continue
             if (
-                not all((trade.spec, trade.receiver, trade.phone, trade.address, trade.supplier))
+                not all((trade.spec, trade.receiver, trade.phone, trade.address))
                 or "*" in trade.phone + trade.address
             ):
-                raise BusinessError("请先补齐型号规格、供应商和完整收件信息，再导出。")
+                raise BusinessError("请先补齐型号规格和完整收件信息，再导出。")
         elif trade.status not in ("REFUNDING", "REFUNDED") or trade.recovered_at:
             continue
-        if not trade.supplier:
+        if kind == "refund" and not trade.supplier:
             raise BusinessError("请先为订单选择供应商。")
         groups.setdefault(trade.supplier, []).append(
             {

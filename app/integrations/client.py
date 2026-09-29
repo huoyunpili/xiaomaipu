@@ -8,7 +8,11 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from django.conf import settings
+from django.views.decorators.debug import sensitive_variables
+
+from app.common.business import BusinessError
+
+from .credentials import read_credentials
 
 
 class APIError(Exception):
@@ -72,8 +76,8 @@ def rejection_hint(code, operation, message):
 
 BUSINESS_ERROR_MESSAGES = {
     100008: (
-        "闲管家拒绝了订单接口（错误 100008）。系统已停止自动重试，避免反复报错；"
-        "请在闲管家确认当前店铺已授权且套餐包含订单 API，然后重新验证授权并开启同步。"
+        "闲管家拒绝了订单接口（错误 100008）。本次同步已停止，后台会按计划再次检查；"
+        "请在闲管家核对这组 API 信息对应的店铺和订单接口权限，再验证 API 连接。"
         "现有本地数据不会丢失。"
     ),
 }
@@ -103,10 +107,14 @@ class XgjClient:
         "express": "/api/open/express/companies",
     }
 
+    @sensitive_variables()
     def call(self, operation, body=None, seller=""):
-        key, secret = settings.XGJ_APP_KEY, settings.XGJ_APP_SECRET
+        try:
+            key, secret = read_credentials()
+        except BusinessError as exc:
+            raise APIError(str(exc)) from None
         if not key or not secret:
-            raise APIError("未配置闲管家密钥，请检查本地或部署环境配置。")
+            raise APIError("请先在“闲管家 API”页面填写 AppKey 和 AppSecret 并保存。")
         raw = json.dumps(body or {}, ensure_ascii=False, separators=(",", ":")).encode()
         stamp = int(time.time())
         query = {
@@ -134,7 +142,7 @@ class XgjClient:
                 content = response.read(4 * 1024 * 1024 + 1)
         except urllib.error.HTTPError as exc:
             raise APIError(
-                f"平台 HTTP {exc.code}，请稍后重试或检查授权。",
+                f"平台 HTTP {exc.code}，请稍后重试或检查 API 配置与接口权限。",
                 retryable=exc.code == 429 or exc.code >= 500,
             ) from None
         except (urllib.error.URLError, TimeoutError, OSError):

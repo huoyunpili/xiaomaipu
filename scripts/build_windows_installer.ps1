@@ -13,7 +13,17 @@ $stageRoot = Join-Path $projectRoot '.local-release/windows-stage'
 $pythonVersion = '3.13.7'
 $pythonSha256 = 'f6cca216a359be84797cabb54149ce5e062afb16cc7567eb7fc51cacb2d86b65'
 $postgresSha256 = 'b9424ee7bc60b52450ff910a3630225df32e633f3cb29c1d126d9299d59aea28'
+$electronVersion = '44.4.5'
+$electronSha256 = '11c395820a5aaa8ebcc0686b476d0ac98a730274ebfbdc8cf5538a7c2815cb5d'
 $uvExe = Join-Path $projectRoot '.venv/Scripts/uv.exe'
+
+function Assert-StagingPath([string]$Target) {
+    $full = [IO.Path]::GetFullPath($Target)
+    $expected = [IO.Path]::GetFullPath((Join-Path $projectRoot '.local-release/windows-stage'))
+    if ($full -ne $expected -and -not $full.StartsWith($expected + [IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing a staging operation outside the release workspace: $full"
+    }
+}
 
 function Download-Checked([string]$Url,[string]$Target,[string]$Sha256='') {
     if (-not (Test-Path -LiteralPath $Target)) { Invoke-WebRequest -UseBasicParsing -Uri $Url -OutFile $Target }
@@ -25,8 +35,12 @@ function Download-Checked([string]$Url,[string]$Target,[string]$Sha256='') {
 if (-not $SkipChecks) {
     & (Join-Path $projectRoot '.venv/Scripts/python.exe') (Join-Path $projectRoot 'scripts/check.py')
     if ($LASTEXITCODE) { throw 'Quality checks failed; no installer was built.' }
+    if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw 'Node.js is required on the release builder to test the desktop shell.' }
+    & node --test (Join-Path $projectRoot 'tests/desktop_shell.test.cjs')
+    if ($LASTEXITCODE) { throw 'Desktop shell checks failed; no installer was built.' }
 }
 if (-not (Test-Path -LiteralPath $uvExe)) { throw 'The release environment is missing .venv/Scripts/uv.exe.' }
+Assert-StagingPath $stageRoot
 if (Test-Path -LiteralPath $stageRoot) { Remove-Item -LiteralPath $stageRoot -Recurse -Force }
 New-Item -ItemType Directory -Force -Path (Join-Path $stageRoot 'runtime/python'),(Join-Path $stageRoot 'runtime/site-packages'),(Join-Path $stageRoot 'scripts') | Out-Null
 
@@ -60,7 +74,12 @@ $pth = @(
 
 & $uvExe export --project $projectRoot --frozen --no-dev --no-emit-project --format requirements-txt --output-file (Join-Path $stageRoot 'requirements.txt')
 if ($LASTEXITCODE) { throw 'Unable to export locked dependencies.' }
-& $uvExe pip install --python (Join-Path $stageRoot 'runtime/python/python.exe') --target (Join-Path $stageRoot 'runtime/site-packages') --requirements (Join-Path $stageRoot 'requirements.txt')
+# uv writes normal progress to stderr; PowerShell 5.1 must judge its exit code,
+# not turn that progress into a terminating NativeCommandError when logged.
+try {
+    $ErrorActionPreference = 'Continue'
+    & $uvExe pip install --python (Join-Path $stageRoot 'runtime/python/python.exe') --target (Join-Path $stageRoot 'runtime/site-packages') --requirements (Join-Path $stageRoot 'requirements.txt')
+} finally { $ErrorActionPreference = 'Stop' }
 if ($LASTEXITCODE) { throw 'Unable to prepare bundled Python dependencies.' }
 
 $pgExtract = Join-Path $stageRoot 'postgres-extract'
@@ -70,11 +89,14 @@ if ($LASTEXITCODE) { throw 'PostgreSQL archive extraction failed.' }
 $pgBin = Get-ChildItem -LiteralPath $pgExtract -Filter 'pg_ctl.exe' -File -Recurse | Select-Object -First 1
 if (-not $pgBin) { throw 'pg_ctl.exe was not found in the PostgreSQL ZIP.' }
 $pgRoot = Split-Path (Split-Path $pgBin.FullName -Parent) -Parent
+Assert-StagingPath $pgRoot
+Assert-StagingPath $pgExtract
 Move-Item -LiteralPath $pgRoot -Destination (Join-Path $stageRoot 'runtime/postgresql')
 Remove-Item -LiteralPath $pgExtract -Recurse -Force
 $bundledPostgres = Join-Path $stageRoot 'runtime/postgresql'
 foreach ($unusedName in @('doc','include','pgAdmin 4','StackBuilder')) {
     $unusedPath = Join-Path $bundledPostgres $unusedName
+    Assert-StagingPath $unusedPath
     if (Test-Path -LiteralPath $unusedPath) { Remove-Item -LiteralPath $unusedPath -Recurse -Force }
 }
 Get-ChildItem -LiteralPath (Join-Path $bundledPostgres 'lib') -File -Recurse |
@@ -86,6 +108,21 @@ Copy-Item -LiteralPath (Join-Path $projectRoot 'manage.py') -Destination $stageR
 Copy-Item -LiteralPath (Join-Path $projectRoot 'scripts/windows_release.ps1') -Destination (Join-Path $stageRoot 'scripts')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'LICENSE') -Destination $stageRoot
 Copy-Item -LiteralPath (Join-Path $projectRoot 'NOTICE') -Destination $stageRoot
+
+# Carry the renderer with the application: no browser, WebView download, or
+# additional end-user runtime installation is required.
+$electronZip = Join-Path $cacheRoot "electron-v$electronVersion-win32-x64.zip"
+Download-Checked "https://github.com/electron/electron/releases/download/v$electronVersion/electron-v$electronVersion-win32-x64.zip" $electronZip $electronSha256
+$electronStage = Join-Path $stageRoot 'electron-extract'
+Assert-StagingPath $electronStage
+Expand-Archive -LiteralPath $electronZip -DestinationPath $electronStage
+Move-Item -LiteralPath (Join-Path $electronStage 'LICENSE') -Destination (Join-Path $stageRoot 'LICENSE.electron')
+Get-ChildItem -LiteralPath $electronStage | Move-Item -Destination $stageRoot
+Remove-Item -LiteralPath $electronStage
+Move-Item -LiteralPath (Join-Path $stageRoot 'electron.exe') -Destination (Join-Path $stageRoot 'FishManager.exe')
+Remove-Item -LiteralPath (Join-Path $stageRoot 'resources/default_app.asar') -Force
+Copy-Item -LiteralPath (Join-Path $projectRoot 'desktop') -Destination (Join-Path $stageRoot 'resources/app') -Recurse
+Copy-Item -LiteralPath (Join-Path $projectRoot 'desktop/icon.ico') -Destination (Join-Path $stageRoot 'FishManager.ico')
 
 $env:DJANGO_SETTINGS_MODULE='app.config.settings.windows_release'
 $env:DJANGO_SECRET_KEY='build-only-secret-build-only-secret-build-only-secret-123456789'

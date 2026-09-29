@@ -11,6 +11,7 @@ urlpatterns = [
     path("refunds/", views.listing, {"area": "refunds"}, name="wb-refunds"),
     path("orders/", views.listing, name="wb-orders"),
     path("orders/<uuid:pk>/", views.detail, name="wb-detail"),
+    path("orders/<uuid:pk>/review/", views.review, name="wb-review"),
     path("orders/<uuid:pk>/recovery/", views.recovery, name="wb-recovery"),
     path("orders/<uuid:pk>/product-image/", views.product_image, name="wb-product-image"),
     path("costs/", views.costs, name="wb-costs"),

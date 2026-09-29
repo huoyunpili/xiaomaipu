@@ -1,6 +1,6 @@
 [project]
 name = "xianyu-seller-backoffice"
-version = "0.6.0"
+version = "0.7.0"
 description = "Single-shop seller backoffice"
 readme = "README.md"
 license = "Apache-2.0"

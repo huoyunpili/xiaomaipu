@@ -314,7 +314,7 @@ def connect(*, actor, client=None):
     if expected:
         stores = [s for s in stores if str(s.get("authorize_id")) == expected]
     if len(stores) != 1:
-        raise APIError("无法唯一匹配有效授权店铺，请核对店铺授权及店铺设置。")
+        raise APIError("当前 API 信息未匹配到唯一可用店铺，请核对 AppKey、AppSecret 和店铺设置。")
     seller = str(stores[0].get("authorize_id", ""))
     if not seller.isdigit():
         raise APIError("平台店铺标识格式异常。")
@@ -335,6 +335,7 @@ def connect(*, actor, client=None):
         else:
             connection.seller_id = seller
             connection.actor = actor
+        connection.enabled = bool(connection.sync_start_at)
         connection.error = "" if connection.sync_start_at else "请先确认自动同步起始日。"
         connection.service_info = {
             key: stores[0].get(key)

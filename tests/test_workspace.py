@@ -99,8 +99,8 @@ def test_historical_scope_not_auto_added(connection):
 
 def test_export_snapshot_stale_and_validation(connection, admin_user):
     t = make_trade(connection)
-    with pytest.raises(BusinessError):
-        create_batches([t], "shipping", admin_user)
+    unassigned = create_batches([t], "shipping", admin_user)[0]
+    assert unassigned.supplier == ""
     update_product(t.product, 6000, "供应商甲", admin_user)
     t.refresh_from_db()
     b = create_batches([t], "shipping", admin_user)[0]

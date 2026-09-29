@@ -1,5 +1,7 @@
 <!doctype html>
-<html lang="zh-CN" data-ui-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="author" content="阿栋"><title>鱼管家 · 使用与配置手册</title>
+<html lang="zh-CN" data-ui-theme="light"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="author" content="阿栋"><title>鱼管家 · 完整使用手册</title>
 <!-- TOKENS -->
 <style>
 *{box-sizing:border-box}html{scroll-padding-top:24px;scroll-behavior:smooth}body{margin:0;color:#1f2329;background:#fff;font:15px/1.85 var(--ui-font-family,"Microsoft YaHei",sans-serif)}a{color:#245bdb;text-underline-offset:3px}h1,h2,h3{line-height:1.4}h1{font-size:38px;margin:12px 0}h2{font-size:26px;margin:0 0 24px}h3{font-size:18px;margin:26px 0 10px}p{margin:10px 0}li{margin:8px 0}ul,ol{padding-left:23px}aside{position:fixed;inset:0 auto 0 0;width:250px;background:#f7f8fa;border-right:1px solid #e4e7ed;padding:26px 20px;overflow:auto}aside strong{font-size:21px}aside p{font-size:12px;color:#646a73}nav a{display:block;color:#394150;font-size:13px;text-decoration:none;padding:7px 10px;border-radius:5px}nav a:hover,nav a:focus{background:#e8eaed}main{margin-left:250px;max-width:1250px;padding:48px 56px}section{padding:38px 0;border-top:1px solid #e4e7ed}section:first-of-type{border:0}.lead{font-size:17px;color:#646a73}.tag{font-size:12px;color:#245bdb;letter-spacing:.08em}.muted,figcaption{color:#646a73;font-size:13px}.note,.success,.warning{padding:14px 18px;border-left:3px solid #9aa7bb;background:#f7f8fa;margin:18px 0}.success{background:#eaf6ef;border-color:#237b4b}.warning{background:#fff5e5;border-color:#b87813}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:14px;margin:16px 0}th,td{text-align:left;padding:11px 13px;border-bottom:1px solid #e4e7ed;vertical-align:top;min-width:110px}th{background:#f7f8fa}code{font:13px/1.6 Consolas,monospace;background:#f2f3f5;padding:2px 5px;overflow-wrap:anywhere}pre{background:#f7f8fa;border:1px solid #e4e7ed;border-radius:7px;padding:42px 18px 18px;overflow:auto;position:relative}pre code{padding:0;background:none;white-space:pre;overflow-wrap:normal}button{font:inherit;cursor:pointer;border:1px solid #c5c9d0;border-radius:5px;background:#fff;padding:7px 13px;min-height:40px}pre button{position:absolute;right:8px;top:5px;min-height:30px;padding:2px 10px;font-size:12px;color:#245bdb}button:focus-visible,a:focus-visible{outline:2px solid #245bdb;outline-offset:3px}img{display:block;width:100%;height:auto;border:1px solid #e4e7ed;border-radius:7px}figure{margin:24px 0}figcaption{margin-top:8px}.tools{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}.tools a{padding:7px 13px;border:1px solid #c5c9d0;border-radius:5px;text-decoration:none}footer{font-size:12px;color:#646a73;border-top:1px solid #e4e7ed;padding-top:22px}.screen-index{font-size:13px}.checklist label{display:block;padding:8px 0}.checklist input{margin-right:10px;accent-color:#245bdb}.skip{position:absolute;left:-9999px}.skip:focus{left:10px;top:10px;background:white;padding:8px;z-index:5}.status{position:fixed;bottom:18px;right:18px;background:#eaf6ef;color:#237b4b;border-radius:6px;padding:0 16px}.phone{max-width:420px}details{border-bottom:1px solid #e4e7ed;padding:14px 0}summary{cursor:pointer;font-weight:600;min-height:36px}.section-number{font-size:12px;color:#245bdb;display:block;margin-bottom:8px}.no-print-note{font-size:12px;color:#646a73}
@@ -7,77 +9,115 @@
 @media(max-width:380px){nav{columns:1}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 @media print{aside,.tools,pre button,.status,.checklist input,.no-print-note{display:none}main{margin:0;max-width:none;padding:0}section{break-before:page;padding-top:0}section:first-of-type{break-before:auto}h2,h3{break-after:avoid}pre,figure,tr,.note,.success,.warning{break-inside:avoid}pre{white-space:pre-wrap;padding:12px}pre code{white-space:pre-wrap}body{font-size:11pt}a{color:inherit}details>div{display:block}img{max-height:720px;object-fit:contain}.phone{max-height:600px;width:auto;max-width:100%}table{font-size:10pt}}
-</style></head><body><a class="skip" href="#start">跳到正文</a>
-<aside><strong>鱼管家</strong><p>使用与配置手册 · 作者：阿栋</p><nav aria-label="手册目录">
-<a href="#start">01 阅读与版本说明</a><a href="#api">02 获取闲管家 API</a><a href="#install">03 安装鱼管家</a><a href="#connect">04 连接店铺与同步</a><a href="#home">05 工作台与回款</a><a href="#costs">06 商品成本与供货商</a><a href="#shipping">07 待发货与文字清单</a><a href="#orders">08 待完成、全部订单与详情</a><a href="#refunds">09 退款售后与货款追回</a><a href="#profits">10 利润统计与核对</a><a href="#history">11 历史订单同步</a><a href="#settings">12 设置与账号</a><a href="#maintenance">13 启停、备份与迁移</a><a href="#troubleshooting">14 故障排查</a><a href="#acceptance">15 首次使用验收单</a><a href="#reference">16 技术参数与参考资料</a>
-</nav></aside><main>
-<header><p class="tag">鱼小铺后台管理助手 · 从配置到使用</p><h1>鱼管家使用与配置手册</h1><p class="lead">面向店主和协助部署的维护人员。每一步说明在哪里操作、需要填什么、怎样确认已经成功。</p><p class="muted">文档版本 1.0 · 2026-09-20 · 产品基线 0.6.0 正式版</p><div class="tools"><button id="print">打印 / 另存为 PDF</button><a href="https://github.com/huoyunpili/xiaomaipu" target="_blank" rel="noopener">项目与源码 ↗</a><a href="#api">从获取 API 开始 →</a></div><p class="no-print-note">支持浏览器 Ctrl+F 查找、命令复制、离线阅读。图片为当前系统的高清演示截图，截图金额、订单及客户信息均为演示数据。</p></header>
-<section id="start"><span class="section-number">01 / 使用前先读</span><h2>普通用户只使用完整安装包</h2><p>鱼管家定位为鱼小铺后台管理助手，在本地运行，面向单店经营。店主使用电脑管理订单、回款、成本和售后，并按供货商生成可复制或下载的文字清单。</p>
-<div class="table-wrap"><table><thead><tr><th>安装方式</th><th>包含功能</th><th>需要准备</th><th>配置和数据位置</th></tr></thead><tbody><tr><td>Windows 完整安装包</td><td>经营后台、自动同步、文字发货清单、成本利润与售后跟进</td><td>64 位 Windows 电脑、网络连接</td><td><code>%LOCALAPPDATA%\XianyuSeller</code></td></tr></tbody></table></div>
-<p>不需要选择基础版或完整协作版，也不需要安装 Docker、Python、uv、Redis、PostgreSQL 或隧道工具。源码与 Docker Compose 只面向开发者，不是普通用户安装步骤。</p><div class="warning"><strong>版本对应：</strong>本手册按 0.6.0 正式版编写。下载时请核对安装包版本，预发布版的界面和能力可能不同。</div>
-<h3>三个账号分别做什么</h3><ul><li><strong>闲鱼账号：</strong>实际卖货的店铺账号，在平台完成店铺授权。</li><li><strong>闲管家账号和应用凭据：</strong>管理授权店铺，向鱼管家提供接口访问权限。</li><li><strong>鱼管家店主账号：</strong>首次启动时自己创建，用于登录本机后台。它不是闲鱼密码，也不是 AppSecret。</li></ul>
-<p>第一次建议先做只读同步与成本核对，再生成少量文字清单核对内容。鱼管家生成清单不会自动提交平台发货。</p></section>
+</style>
+<style>main{max-width:1350px}figure{margin:20px 0}.zoom{padding:0;border:0;display:block;width:100%;background:transparent;cursor:zoom-in}.zoom img{width:100%}.path{font-weight:600;background:#f2f5fc;padding:12px 16px;border-radius:6px}.source{font-size:12px;color:#646a73}dialog{width:96vw;max-width:none;max-height:95vh;border:0;border-radius:8px;padding:16px}dialog::backdrop{background:#0009}dialog img{width:auto;max-width:none}dialog .image-scroll{overflow:auto;max-height:80vh}dialog button{margin-bottom:12px}.copy-line{border:1px solid #e4e7ed;padding:14px 18px;border-radius:6px}@media print{section{break-before:auto}figure{break-inside:avoid}section{padding-top:24px}.zoom{display:block}.tools,dialog{display:none}}</style>
+</head><body>
+<a class="skip" href="#start">跳到正文</a>
+<aside><strong>鱼管家</strong><p>完整使用手册 · 一份文件即可阅读</p><nav aria-label="手册目录">
+<a href="#start">使用顺序</a><a href="#install">安装与首次使用</a>
+<strong style="font-size:13px;display:block;margin:12px 10px 4px">API 获取与配置</strong>
+<a href="#api">1 登录并绑定店铺</a><a href="#application">2 添加自研应用</a><a href="#subscription">3 套餐与接口服务</a><a href="#credentials">4 获取 Key / Secret</a><a href="#connect">5 填入鱼管家</a>
+<strong style="font-size:13px;display:block;margin:12px 10px 4px">日常使用</strong>
+<a href="#home">工作台与回款</a><a href="#costs">商品成本与供货商</a><a href="#shipping">导出发货单</a><a href="#orders">查询与跟进订单</a><a href="#review">待核对订单处理</a><a href="#refunds">退款售后与货款追回</a><a href="#profits">利润统计</a><a href="#history">历史订单导入</a><a href="#settings">设置与账号</a><a href="#maintenance">备份与升级</a><a href="#help">常见问题</a>
+</nav></aside>
+<main>
+<header id="start">
+<p class="tag">安装 · API 接入 · 日常经营</p><h1>鱼管家完整使用手册</h1>
+<p class="lead">第一次按顺序完成安装与 API 接入；以后按目录查看订单、发货、核对、售后和利润。全部说明与图片放在这一份手册里。</p>
+<div class="tools"><a href="https://goofish.pro/login" target="_blank" rel="noopener">打开闲管家</a><a href="#connect">已有 AppKey / AppSecret，直接配置 →</a><button id="print">打印 / 另存为 PDF</button></div>
+<p class="muted">图文核对：2026-09-29。闲管家配图来自其官方公开手册中的旧版界面，用于辨认入口；菜单、套餐与价格以你登录后看到的页面为准。点击图片可放大。</p>
+</header>
+<section id="install"><h2>安装与首次使用</h2>
+<ol><li>从项目发布页下载 Windows 安装程序，双击安装，保留默认选项。</li><li>首次打开鱼管家，创建自己的店主账号，没有默认账号密码。</li><li>按照下面的 API 图解接入闲管家。已有 AppKey / AppSecret 时，可直接跳到<a href="#connect">填入鱼管家</a>。</li></ol>
+<p>安装包提供运行所需组件。日常打开桌面“鱼管家”即可使用，无需启动其他软件或配置同步开关。</p>
+<p class="muted">本手册按新版公版功能编写，公开下载以实际发布的安装包为准。截图中的经营数据是演示数据。</p></section>
 
-<section id="api"><span class="section-number">02 / 外部服务准备</span><h2>如何取得闲管家 API 凭据</h2><p>鱼管家连接的是<strong>闲管家开放平台</strong>。这里不需要获取闲鱼浏览器 Cookie，也不需要把闲鱼登录密码写入鱼管家。</p>
-<h3>第 1 步：注册并登录闲管家</h3><p>打开 <a href="https://goofish.pro/login" target="_blank" rel="noopener">闲管家登录页</a>。已有账号直接登录；没有账号时使用其注册入口，按页面要求完成手机号验证。</p>
-<h3>第 2 步：绑定准备经营的闲鱼店铺</h3><p>官方手册提供的路径是“销售管理 → 店铺 → 创建闲鱼店铺”，随后进入应用授权。使用目标店铺的闲鱼账号完成授权，回到店铺列表确认店铺身份与授权状态。[<a href="https://m.goofish.pro/app/operation.html" target="_blank" rel="noopener">闲管家官方操作手册</a>]</p>
-<h3>第 3 步：确认自研应用接入资格</h3><p>在闲管家查找“开放平台 / 应用管理 / 我的应用”，进入添加应用，寻找“我有自研系统”一类入口。这里要接入的是自己的经营系统，不是购买虚拟卡券货源。官方材料可确认存在自研接入入口，但不同账号的菜单、资格与套餐可能不同；本手册未登录一个全新账号逐项验收申请页面。</p><p>如果没有入口，或要求购买服务，先向闲管家客服确认下面的需求，再决定开通哪一项。不要仅凭普通会员已开通就认为所有 API 都能使用。具体价格、审批资料和有效期以该账号当前开通页面及客服回复为准。</p>
-<blockquote class="note">我要将自己的闲鱼实物店铺连接到本地自研经营后台，需要查询授权店铺、订单列表和订单详情。请确认应该开通哪个应用类型及套餐，如何创建自研应用、取得 AppKey / AppSecret，以及是否需要上线或单独授权目标店铺。</blockquote>
-<p class="muted">入口依据：<a href="https://file.goofish.pro/sop/erp/探网权益/探网权益对接流程.pdf" target="_blank" rel="noopener">闲管家官方应用接入图示</a>中可见“我有自研系统”。图示正文服务于其他应用，只用于辨认入口，不照搬其货源配置。鱼管家所用签名凭据以<a href="https://apifox.com/apidoc/shared-3ac13d69-5a38-4536-ae9b-a54001854ef8" target="_blank" rel="noopener">闲管家开放平台接入说明</a>为准。</p>
-<h3>第 4 步：创建应用、取得凭据并确认生效</h3><ol><li>按闲管家当前页面填写应用名称等资料，例如“鱼管家自用”，选择适用于订单查询的自研接入。</li><li>进入应用详情，找到该应用的 <code>AppKey</code> 和 <code>AppSecret</code>。Key 是应用标识，Secret 是应用密钥。</li><li>如果页面要求启用、上线或授权店铺，完成对应步骤。确认目标店铺位于这组应用凭据允许访问的范围内。</li><li>把凭据只保存到自己的本机配置文件。不要在公开反馈、宣传截图或 GitHub 中粘贴它们。</li></ol>
-<div class="note"><strong>接口回调地址怎么填？</strong>当前鱼管家通过后台任务主动查询订单，不依赖订单 Webhook 接收地址。若应用创建页面强制要求回调地址，请让闲管家确认轮询接入方式或联系维护者，不要虚构地址。</div>
-<h3>第 5 步：列出必须能够完成的接口动作</h3><div class="table-wrap"><table><tr><th>用途</th><th>应该能做到</th><th>验证方式</th></tr><tr><td>连接店铺</td><td>查询授权店铺</td><td>鱼管家“验证授权店铺”成功，身份匹配</td></tr><tr><td>同步订单</td><td>查询订单列表及详情</td><td>立即同步成功，看到已知订单</td></tr></table></div><p>“拿到 Key”不等于“接口权限齐全”。至少用一笔已知订单核对店铺身份、金额、状态和商品信息。</p></section>
+<section id="api">
+<span class="section-number">1 / 在闲管家操作</span><h2>登录，绑定要管理的闲鱼店铺</h2>
+<p>打开<a href="https://goofish.pro/login" target="_blank" rel="noopener">闲管家登录页</a>。没有账号时先注册；已有账号直接登录。</p>
+<p class="path">销售管理 → 店铺 → 创建闲鱼店铺</p>
+<p>按页面提示完成目标闲鱼店铺的授权。已绑定且授权有效的店铺可跳过这一步。</p>
+<figure><button class="zoom" aria-label="放大店铺绑定截图"><img src="images/xgj-bind-shop.png" alt="闲管家官方截图：销售管理下的店铺入口与创建闲鱼店铺按钮"></button><figcaption>图 1 · 先在闲管家绑定自己的店铺。来源：<a href="https://m.goofish.pro/app/operation.html" target="_blank" rel="noopener">闲管家官方操作手册 · 创建闲鱼店铺</a>。</figcaption></figure>
+</section>
 
-<section id="install"><span class="section-number">03 / 安装</span><h2>下载一个安装包，双击完成</h2><ol><li>从 <a href="https://github.com/huoyunpili/xiaomaipu/releases" target="_blank" rel="noopener">GitHub Releases</a> 下载 <code>鱼管家-0.6.0-安装程序.exe</code>。</li><li>双击安装，等待内置数据库和服务初始化。安装过程会自动配置完整经营后台。</li><li>浏览器自动打开 <a href="http://127.0.0.1:8765" target="_blank" rel="noopener">http://127.0.0.1:8765</a> 后，创建自己的店主账号；没有默认账号密码。</li></ol><div class="success"><strong>成功标志：</strong>能看到首次创建账号页面；从开始菜单再次打开“鱼管家”也能进入同一地址。</div><p>以后登录 Windows 时鱼管家自动启动。程序升级或卸载不会主动删除 <code>%LOCALAPPDATA%\XianyuSeller</code> 中的订单、旧版视频、配置和备份。</p><div class="note">正式版不提供公网入口，也不需要隧道或中继。店主在本机复制或下载文字清单，再通过自己常用的聊天工具发送给供货商。</div></section>
+<section id="application">
+<span class="section-number">2 / 在闲管家操作</span><h2>添加自己的应用</h2>
+<p class="path">开放平台 → 应用 / 我的应用 → 添加应用 → 我有自研系统</p>
+<p>鱼管家采用手动填写 API 的接入方式。按图选择<strong>我有自研系统</strong>，应用名称可填“鱼管家”。实物订单管理应查看<strong>进销存 / ERP</strong>类应用，按页面要求完成资料填写。</p>
+<figure><button class="zoom" aria-label="放大添加自研应用截图"><img src="images/xgj-create-app.png" alt="闲管家官方截图：添加应用，选择我有自研系统，填写应用类型和名称"></button><figcaption>图 2 · 官方标注了“添加应用”和“我有自研系统”。示例中的应用名称不需要照抄。来源：<a href="https://m.goofish.pro/app/operation.html" target="_blank" rel="noopener">官方操作手册 · 自研系统对接</a>。</figcaption></figure>
+<p class="muted">这里是店主为自己的经营系统添加应用。若页面要求额外资质或没有该入口，先向闲管家客服确认账号是否支持此接入方式。</p>
+</section>
 
-<section id="connect"><span class="section-number">05 / 首次连接</span><h2>连接店铺，确认同步真的成功</h2><p><strong>入口：</strong>设置 → 闲管家 API。</p><ol><li>点击“验证授权店铺”。若出现权限或配置错误，先核对 Key、Secret、应用状态和店铺授权。</li><li>查看页面显示的同步边界。首次建立连接会记录接入日期；旧实例如果缺少可信日期，会要求确认。</li><li>点击“立即同步”，稍后刷新或查看运行记录，确认任务已完成。</li><li>比对一笔平台待发货订单的订单号、实付、状态和商品信息。</li><li>需要持续更新时点击“开启每 5 分钟同步”。浏览器关闭不影响后台任务，电脑或服务停止会影响同步。</li></ol><p>“重扫接入日起订单”用于补查当前经营范围；接入前订单先导入闲管家，再按<a href="#history">历史订单同步</a>操作。</p><div class="success">应同时看到“最近完整同步”更新、运行记录成功，以及一笔已知订单内容匹配。只有页面能打开或任务已发出，还不能算同步完成。</div><p class="note">当前以单店为主要使用方式。凭据下有多家店铺时，务必核对实际连接的是哪一家；店铺不符时停止导出与发货，联系维护者确认，不能把当前安装当作多店切换后台。</p></section>
+<section id="subscription">
+<span class="section-number">3 / 在闲管家操作</span><h2>需要办什么套餐，在哪里订购？</h2>
+<p><strong>需要的是允许自研应用查询目标店铺订单的接口服务。</strong>先进入应用的订购页，查看该应用、该店铺是否已有有效服务；已有权限时无需重复购买。</p>
+<p class="path">我的应用 → 订购应用<br>或：应用详情 → 闲鱼店铺订购情况 → 对应店铺的“订购”</p>
+<ol>
+<li>选中要接入的<strong>应用和店铺</strong>，查看可订购的版本。</li>
+<li>核对版本是否支持<strong>自研应用、订单列表与订单详情查询</strong>，再选服务期限。</li>
+<li>核对金额、到期时间和续费条件后自行完成订购；返回应用详情，确认目标店铺的服务有效。</li>
+</ol>
+<div class="note"><strong>“ERP专业版”可以作为查找线索，不能当成所有账号的固定答案。</strong><a href="https://helpnew.wsgjp.com/c33d/2109/1d3c" target="_blank" rel="noopener">网上管家婆官方接入说明</a>曾要求其用户订购此版本，但那是它的第三方 ERP 接入流程，不能证明鱼管家自研接入的当前套餐和价格相同。不要把虚拟货源、卡密或直充教程中的套餐直接套用过来。</div>
+<figure><button class="zoom" aria-label="放大应用订购入口截图"><img src="images/xgj-app-online.png" alt="闲管家官方应用列表截图：右上角订购应用按钮，以及自研系统的应用状态"></button><figcaption>图 3 · 看右上角“订购应用”；列表同时可查看应用状态。此图只说明入口，不是当前报价单。来源：<a href="https://m.goofish.pro/app/operation.html" target="_blank" rel="noopener">官方操作手册 · 自研系统对接</a>。</figcaption></figure>
+<details><summary>不确定买哪项？复制这段话问闲管家客服</summary><p id="support-message" class="copy-line">我要把自己的闲鱼实物店铺接入本机鱼管家，采用“我有自研系统”的 AppKey / AppSecret 方式，需要查询授权店铺、订单列表、订单详情和退款信息。请确认我的账号应该订购哪个应用类型和套餐，是否支持上述接口、收费期限及价格，以及应用是否需要上线。请提供对应订购入口。</p><button id="copy-support" type="button">复制咨询内容</button><p id="copy-status" role="status"></p></details>
+<p class="source">公开资料未能确认所有账号当前适用的自研套餐名称与现价，因此本手册不列固定价格或要求购买某个等级。</p>
+</section>
 
-<section id="home"><span class="section-number">06 / 工作台</span><h2>每天先看待办，再看资金安排</h2><figure><img src="../product/images/dashboard-current.png" alt="工作台与回款安排的高清演示截图" loading="lazy"><figcaption>演示界面。当前版本可能增加用户名展示，具体以安装版本为准。</figcaption></figure><div class="table-wrap"><table><tr><th>区域</th><th>含义</th><th>建议操作</th></tr><tr><td>待发货</td><td>需要继续安排发出的订单</td><td>进入待发货，核对商品与供货商</td></tr><tr><td>担保中金额</td><td>按本地订单状态推算的未完成资金</td><td>点击进入构成明细；不当作平台钱包可提现余额</td></tr><tr><td>退款处理中</td><td>尚未完成客户退款的售后</td><td>进入退款售后，跟进平台处理</td></tr><tr><td>今日预计利润</td><td>按付款日期及已有成本统计</td><td>查看缺成本提示并补充</td></tr></table></div>
+<section id="credentials">
+<span class="section-number">4 / 在闲管家操作</span><h2>找到 AppKey 和 AppSecret</h2>
+<p class="path">我的应用 → 刚创建的应用 → 详情 → 应用概况</p>
+<p>找到 <strong>AppKey</strong> 与 <strong>AppSecret</strong>，分别用旁边的复制按钮取得完整内容。星号是隐藏后的显示，不能把星号当作密钥填写。</p>
+<figure><button class="zoom" aria-label="放大密钥与店铺订购截图"><img src="images/xgj-app-detail.png" alt="闲管家官方应用详情截图：左上方 AppKey、AppSecret 及复制按钮，中间为店铺订购情况，右上方确认上线"></button><figcaption>图 4 · 左上是两项凭据，中间是各店铺的订购状态，右上是“确认上线”。图片内已隐藏的信息无需辨认或照抄。来源：<a href="https://m.goofish.pro/app/operation.html" target="_blank" rel="noopener">官方操作手册 · 应用详情</a>。</figcaption></figure>
+<p>若应用仍是“待上线”，按闲管家页面要求完成上线，再核对目标店铺服务是否有效。</p>
+<p class="note">图中还包含通用的“消息推送地址”说明。鱼管家通过定时查询自动同步，客户端没有要求你填写推送地址；不要把本机网址填到闲管家。若平台将其列为必填项，先向平台确认自研查询接口的接入要求。</p>
+</section>
+
+<section id="connect">
+<span class="section-number">5 / 回到鱼管家操作</span><h2>填入两项信息，验证后自动同步</h2>
+<p>打开鱼管家，登录自己的店主账号。</p>
+<p class="path">设置 → 闲管家 API</p>
+<ol><li>把刚才复制的 <strong>AppKey</strong> 和 <strong>AppSecret</strong> 填入同名输入框。</li><li>点击<strong>保存 API 配置</strong>。</li><li>点击<strong>验证 API 连接</strong>。</li></ol>
+<div class="success">验证成功后立即自动同步，之后每 5 分钟更新。看到“最近完整同步”时间更新后，进入<strong>待发货 / 全部订单</strong>查看订单。</div>
+<p>无须配置同步开关、编辑文件或安装额外运行环境。密钥保存在本机，保存后不回显。</p>
+<p class="muted">此行为适用于支持“验证后自动同步”的新版鱼管家安装包；公开下载以实际发布版本为准。</p>
+</section>
+
+<section id="home"><h2>每天先看待办，再看资金安排</h2><figure><img src="../product/images/dashboard-current.png" alt="工作台与回款安排的高清演示截图" loading="lazy"><figcaption>演示界面。当前版本可能增加用户名展示，具体以安装版本为准。</figcaption></figure><div class="table-wrap"><table><tr><th>区域</th><th>含义</th><th>建议操作</th></tr><tr><td>待发货</td><td>需要继续安排发出的订单</td><td>进入待发货，核对商品与供货商</td></tr><tr><td>担保中金额</td><td>按本地订单状态推算的未完成资金</td><td>点击进入构成明细；不当作平台钱包可提现余额</td></tr><tr><td>退款处理中</td><td>尚未完成客户退款的售后</td><td>进入退款售后，跟进平台处理</td></tr><tr><td>今日预计利润</td><td>按付款日期及已有成本统计</td><td>查看缺成本提示并补充</td></tr></table></div>
 <h3>回款数字怎么理解</h3><ul><li><strong>今日已完成：</strong>今天平台确认收货／完成的订单实付金额。</li><li><strong>今日剩余预计：</strong>依据发货时间和参考天数估算，尚未完成的订单金额；与已完成部分不重复计算。</li><li><strong>今日合计：</strong>上述两部分之和。</li><li><strong>未来三天：</strong>从明天起，预计在随后三天完成的未完成订单。</li></ul><p>默认参考日期为发货后 10 × 24 小时。退款中的订单暂停参考；缺少可信发货时间的记录不能硬推日期。平台扣费后的真实到账金额与入账日期，以资金账单为准。实际业务当天没有对应订单时，显示 0 是正常结果，宣传演示数字不作为经营目标。</p><h3>清单变化提醒</h3><p>发现最新清单中的订单有变化时，先核对是否退款、改派或已发货，再与供货商确认后重新导出。旧清单保留为历史记录，不应继续作为当前发货依据。</p></section>
-
-<section id="costs"><span class="section-number">07 / 成本与供应商</span><h2>先认准商品，再填成本</h2><p><strong>入口：</strong>设置 → 商品与供应商，或订单列表右上角“商品成本与供应商”。</p><ol><li>核对商品图片、名称、规格和已有成色。必要时点击“查看关联订单”。</li><li>参考最近成交售价帮助辨认；售价是销售金额，不是采购成本。</li><li>填写单件成本，单位为元，数量由订单确定。</li><li>选择或输入默认供应商；需要时填写供应商微信备注名称和默认发货备注。</li><li>保存该商品配置，回订单或利润页面检查效果。</li></ol><div class="table-wrap"><table><tr><th>字段</th><th>填写示例</th><th>用途</th></tr><tr><td>单件成本</td><td>150.00</td><td>两件对应 300 元商品成本，不在这里填写两件合计</td></tr><tr><td>默认供应商</td><td>数码优选（示例）</td><td>分组生成发货清单；同一家尽量保持名称一致</td></tr><tr><td>微信备注名称</td><td>数码优选售后（示例）</td><td>帮助店主识别联系人，不会自动发微信</td></tr><tr><td>发货备注</td><td>核对颜色、配件，发货前拍视频</td><td>用于后续清单沟通</td></tr></table></div><p>商品成本变更不会直接改写已有订单成本快照。历史某一单成本错了，应进入订单详情，填写“更正本单单件成本”和原因，再保存；不要为改一单而批量重写全部商品价格。</p></section>
-
-<section id="shipping"><span class="section-number">07 / 发货清单</span><h2>把正确的文字清单交给正确的供货商</h2><p><strong>入口：</strong>左侧“待发货”。该页保持简洁；复杂检索可到“全部订单”。</p><ol><li>逐单检查商品、规格、数量、供货商以及收货信息是否完整。</li><li>勾选准备处理的订单。“全选本页”只选择当前页，不等于所有分页。</li><li>在“导出给哪些供货商”中勾选本次需要的供货商，支持多选，默认不选。</li><li>点击“导出发货单”。系统先同步核对，期间稍等，不重复点击。</li><li>在“清单已生成”页点击“复制整份清单”或“下载 TXT”。</li><li>通过自己的聊天工具，只把对应文字清单发给该供货商。</li></ol><figure><img src="../product/images/shipping-current.png" alt="待发货页面与订单、供货商勾选示例" loading="lazy"><figcaption>订单选择和供货商选择都要核对，生成清单不等于已经平台发货。</figcaption></figure><p>清单中包含订单号、商品、已有规格、数量、收货人、电话、地址和备注。正式版不生成公网链接，不接收供货商回填单号或上传视频，也不会因为生成清单而自动向平台提交发货。</p><p>页面底部“历史导出批次”可找回以前的清单。旧清单已经提示变化时，应以当前订单和重新导出的清单为准。</p></section>
-
-<section id="orders"><span class="section-number">08 / 订单跟进</span><h2>待完成、全部订单与订单详情</h2><h3>待完成：发出后继续跟进</h3><p>在“待完成”查看尚未完成交易的订单。可按等待时间或参考回款日排序，结合搜索、供应商和日期筛选跟进。找不到记录时，先清除筛选，再到“全部订单”按订单号找。</p><h3>全部订单：检索与核对的入口</h3><ol><li>使用状态标签选择待发货、待完成、已完成、售后或其他分类。</li><li>搜索订单号、型号或收件人；按需要选择供货商。</li><li>选择日期依据：下单、付款或完成日期。核对本月成交应使用完成日期。</li><li>点击“查询”，需要重新开始时“清除筛选”；可导出当前范围订单 CSV。</li></ol><h3>订单详情：补充本单经营信息</h3><p>点击订单卡片“查看 / 补充”，核对平台时间、物流、退款进度和计算过程。可补充本单供应商、收货信息、发货备注、退货单号、售后备注、实际退货运费损失等，按页面需要填写后保存。</p><div class="warning">详情页“保存”只修改本地经营资料，不会把地址、备注、单号或退款状态自动写回平台。平台操作应在平台或获得授权的工具中完成，再回鱼管家同步核对。</div><p>从旧版升级且曾收到供货商视频时，订单详情会保留只读下载入口；正式版不会新增这类记录。“待核对”说明数据或状态无法可靠判定，不表示缺少商品成本。</p></section>
-
-<section id="refunds"><span class="section-number">11 / 售后</span><h2>客户退款与供货商退钱，分别登记</h2><p><strong>入口：</strong>左侧“退款售后”。</p><div class="table-wrap"><table><tr><th>标签</th><th>显示范围</th></tr><tr><td>退款处理中</td><td>平台尚未完成客户退款的订单</td></tr><tr><td>供应商待追回</td><td>退货退款中供货商货款尚未追回的订单，可包含客户退款处理中或已退款</td></tr><tr><td>客户退款已完成</td><td>平台确认客户退款成功的订单，无论供货商的钱是否已收回</td></tr><tr><td>查看全部售后</td><td>包含已经登记追回的历史记录</td></tr></table></div><ol><li>先在平台处理客户售后，鱼管家用来跟进进度与经营记录。</li><li>与供货商核实退货和采购款返还情况；不要把买家退货签收当作自己已经收到钱。</li><li>收到供货商货款后，在对应订单下拉选择“已追回”，点击“确定”。</li><li>确认文字变绿；默认待追回列表中，该订单会移出，可在全部售后找回。</li><li>如果误点，找到原订单改回“未追回”并确认。真实发生退货运费损失时，进入详情按元填写。</li></ol><p>待追回金额依赖商品成本。缺成本时先补齐，不能把未知当作零。当前是“未追回 / 已追回”登记，尚不提供完整的部分追回金额流水；只收到部分款项时不要标为全部追回，可先用售后备注记录并继续跟进。</p><p>退款清单可以按现有导出入口交给供货商核对；它与待发货的文字清单不同，当前仍可能提供图片形式。</p></section>
-
-<section id="profits"><span class="section-number">12 / 经营核算</span><h2>怎样查看、解释并核对利润</h2><p><strong>入口：</strong>左侧“利润统计”。</p><ol><li>选择“每日预计利润”或“时间段实际利润”。预计按付款日期，实际按成交完成日期。</li><li>选择今天、本月、上月或自定义范围，必要时设置排序并点击“查询”。</li><li>先看纳入订单数与缺少成本订单数，再看销售额、成本、费用和利润。</li><li>到“逐单计算”点击金额，展开实付、成本及费用的来源。</li><li>补齐缺成本订单或更正错误成本后重新核对；需要留档时导出当前统计明细。</li></ol><pre><code>商品成本 = 数量 × 本单单件成本快照
+<section id="costs"><h2>先认准商品，再填成本</h2><p><strong>入口：</strong>设置 → 商品与供应商，或订单列表右上角“商品成本与供应商”。</p><ol><li>核对商品图片、名称、规格和已有成色。必要时点击“查看关联订单”。</li><li>参考最近成交售价帮助辨认；售价是销售金额，不是采购成本。</li><li>填写单件成本，单位为元，数量由订单确定。</li><li>选择或输入默认供应商；需要时填写供应商微信备注名称和默认发货备注。</li><li>保存该商品配置，回订单或利润页面检查效果。</li></ol><div class="table-wrap"><table><tr><th>字段</th><th>填写示例</th><th>用途</th></tr><tr><td>单件成本</td><td>150.00</td><td>两件对应 300 元商品成本，不在这里填写两件合计</td></tr><tr><td>默认供应商</td><td>数码优选（示例）</td><td>分组生成发货清单；同一家尽量保持名称一致</td></tr><tr><td>微信备注名称</td><td>数码优选售后（示例）</td><td>帮助店主识别联系人，不会自动发微信</td></tr><tr><td>发货备注</td><td>核对颜色、配件，发货前拍视频</td><td>用于后续清单沟通</td></tr></table></div><p>商品成本变更不会直接改写已有订单成本快照。历史某一单成本错了，应进入订单详情，填写“更正本单单件成本”和原因，再保存；不要为改一单而批量重写全部商品价格。</p></section>
+<section id="shipping"><h2>把正确的文字清单交给正确的供货商</h2><p><strong>入口：</strong>左侧“待发货”。该页保持简洁；复杂检索可到“全部订单”。</p><ol><li>逐单检查商品、规格、数量、供货商以及收货信息是否完整。</li><li>勾选准备处理的订单。“全选本页”只选择当前页，不等于所有分页。</li><li>直接导出已选订单即可；如需按供货商筛选，再勾选供货商。<strong>不选供货商也能导出发货单。</strong></li><li>点击“导出发货单”。系统先同步核对，期间稍等，不重复点击。</li><li>在“清单已生成”页点击“复制整份清单”或“下载 TXT”。</li><li>通过自己的聊天工具，只把对应文字清单发给该供货商。</li></ol><figure><img src="../product/images/shipping-current.png" alt="待发货页面与订单、供货商勾选示例" loading="lazy"><figcaption>订单选择和供货商选择都要核对，生成清单不等于已经平台发货。</figcaption></figure><p>清单中包含订单号、商品、已有规格、数量、收货人、电话、地址和备注。正式版不生成公网链接，不接收供货商回填单号或上传视频，也不会因为生成清单而自动向平台提交发货。</p><p>页面底部“历史导出批次”可找回以前的清单。旧清单已经提示变化时，应以当前订单和重新导出的清单为准。</p></section>
+<section id="orders"><h2>待完成、全部订单与订单详情</h2><h3>待完成：发出后继续跟进</h3><p>在“待完成”查看尚未完成交易的订单。可按等待时间或参考回款日排序，结合搜索、供应商和日期筛选跟进。找不到记录时，先清除筛选，再到“全部订单”按订单号找。</p><h3>全部订单：检索与核对的入口</h3><ol><li>使用状态标签选择待发货、待完成、已完成、售后或其他分类。</li><li>搜索订单号、型号或收件人；按需要选择供货商。</li><li>选择日期依据：下单、付款或完成日期。核对本月成交应使用完成日期。</li><li>点击“查询”，需要重新开始时“清除筛选”；可导出当前范围订单 CSV。</li></ol><h3>订单详情：补充本单经营信息</h3><p>点击订单卡片“查看 / 补充”，核对平台时间、物流、退款进度和计算过程。可补充本单供应商、收货信息、发货备注、退货单号、售后备注、实际退货运费损失等，按页面需要填写后保存。</p><div class="warning">详情页“保存”只修改本地经营资料，不会把地址、备注、单号或退款状态自动写回平台。平台操作应在平台或获得授权的工具中完成，再回鱼管家同步核对。</div><p>从旧版升级且曾收到供货商视频时，订单详情会保留只读下载入口；正式版不会新增这类记录。“待核对”说明数据或状态无法可靠判定，不表示缺少商品成本。</p></section>
+<section id="review"><h2>待核对订单，怎样处理？</h2>
+<p>点击订单上的<strong>去核对</strong>。常见原因是平台状态与退款金额不一致，需要核实事实后再记录。</p>
+<ol><li>先点击<strong>重新同步订单和退款信息</strong>，查看最新提示。</li><li>按同一订单号打开闲鱼退款详情，核对<strong>退款是否成功、实际已退金额、是否全额</strong>。</li><li>回到鱼管家填写金额与核对依据，选择符合实际情况的结果，点击<strong>保存核对结果</strong>。</li></ol>
+<p>仅在实际退款等于全部实付、且页面允许确认时选择全额退款。部分退款、仍在处理中或无法确定时，选择<strong>保留待核对</strong>，不要为了移出列表而强行结案。</p>
+<p>填错可撤销人工核对结果；平台后续信息变化时，旧结果会失效并要求重新核对。客户退款与供货商货款追回分别登记。</p></section>
+<section id="refunds"><h2>客户退款与供货商退钱，分别登记</h2><p><strong>入口：</strong>左侧“退款售后”。</p><div class="table-wrap"><table><tr><th>标签</th><th>显示范围</th></tr><tr><td>退款处理中</td><td>平台尚未完成客户退款的订单</td></tr><tr><td>供应商待追回</td><td>退货退款中供货商货款尚未追回的订单，可包含客户退款处理中或已退款</td></tr><tr><td>客户退款已完成</td><td>平台确认客户退款成功的订单，无论供货商的钱是否已收回</td></tr><tr><td>查看全部售后</td><td>包含已经登记追回的历史记录</td></tr></table></div><ol><li>先在平台处理客户售后，鱼管家用来跟进进度与经营记录。</li><li>与供货商核实退货和采购款返还情况；不要把买家退货签收当作自己已经收到钱。</li><li>收到供货商货款后，在对应订单下拉选择“已追回”，点击“确定”。</li><li>确认文字变绿；默认待追回列表中，该订单会移出，可在全部售后找回。</li><li>如果误点，找到原订单改回“未追回”并确认。真实发生退货运费损失时，进入详情按元填写。</li></ol><p>待追回金额依赖商品成本。缺成本时先补齐，不能把未知当作零。当前是“未追回 / 已追回”登记，尚不提供完整的部分追回金额流水；只收到部分款项时不要标为全部追回，可先用售后备注记录并继续跟进。</p><p>退款清单可以按现有导出入口交给供货商核对；它与待发货的文字清单不同，当前仍可能提供图片形式。</p></section>
+<section id="profits"><h2>怎样查看、解释并核对利润</h2><p><strong>入口：</strong>左侧“利润统计”。</p><ol><li>选择“每日预计利润”或“时间段实际利润”。预计按付款日期，实际按成交完成日期。</li><li>选择今天、本月、上月或自定义范围，必要时设置排序并点击“查询”。</li><li>先看纳入订单数与缺少成本订单数，再看销售额、成本、费用和利润。</li><li>到“逐单计算”点击金额，展开实付、成本及费用的来源。</li><li>补齐缺成本订单或更正错误成本后重新核对；需要留档时导出当前统计明细。</li></ol><pre><code>商品成本 = 数量 × 本单单件成本快照
 当前平台费参考 = 客户实付 × 1.6%（逐单四舍五入到分）
 订单利润 = 客户实付 − 商品成本 − 平台费
 
 示例：200.00 − 150.00 − 3.20 = 46.80 元</code></pre><p>运费损失单列，不直接混入上述成交利润公式。该公式不包含全部税费、人工、房租等支出。当前 1.6% 是程序的计算口径，不是通用店铺实际费率；不同费率或历史费率应先核对，界面暂未提供通用费率编辑器。</p><figure><img src="../product/images/profits-current.png" alt="利润汇总与逐单计算演示截图" loading="lazy"><figcaption>示例数据用于解释功能，实际统计取决于所选时间和成本完整性。</figcaption></figure><h3>为什么某月初订单没算进来</h3><p>按顺序检查：平台是否已经完成交易 → 完成日期是否落在所选月 → 本地是否已同步或导入 → 是否缺成本 → 是否属于非经营或待核对记录。付款在月初但下月完成的订单，会在下月实际利润中出现。不要仅凭下单日期判断漏算。</p></section>
-
-<section id="history"><span class="section-number">13 / 历史资料</span><h2>从闲管家同步历史订单</h2><p><strong>入口：</strong>设置 → 闲管家 API → 同步并导入闲管家历史订单。鱼管家不再接收本地 CSV 或 Excel 订单文件，避免两套导入口径产生重复、状态不一致和字段缺失。</p><ol><li>先在闲管家完成历史订单导入，并确认订单号、金额、状态和时间正确。</li><li>回到鱼管家点击“同步并导入闲管家历史订单”。已有订单按店铺和订单号去重，不会重复创建。</li><li>稍后刷新同步页面，在运行记录中查看扫描数量、历史数量和已导入历史数量。</li><li>到“全部订单”按订单号抽查；缺成本、字段冲突或平台信息不足的订单会保留为待核对，不会猜造数据。</li></ol><p>闲管家订单列表接口按更新时间查询，当前只能扫描近 179 天并且单次最多 10000 条。较早订单只有在导入闲管家后产生了近期更新时间时才可能返回；数量过多时先在闲管家分批整理再重试。</p></section>
-
-<section id="settings"><span class="section-number">12 / 设置</span><h2>日常配置与账号管理</h2><div class="table-wrap"><table><tr><th>设置入口</th><th>用途与注意事项</th></tr><tr><td>闲管家 API</td><td>验证店铺、同步当前及历史订单、开启或关闭自动同步、检查运行记录</td></tr><tr><td>商品与供应商</td><td>维护成本及默认供货商信息</td></tr><tr><td>我的账号</td><td>修改用户名、称呼和密码；修改用户名或密码需填写当前密码，新密码留空则不更改</td></tr><tr><td>本地店铺与备份</td><td>店铺资料与备份恢复说明；实际备份按部署方式执行</td></tr><tr><td>操作记录</td><td>回查成本更正、账号和售后相关记录</td></tr><tr><td>统一回款参考规则</td><td>修改发货后参考天数，默认 10，可填 1—365；修改后影响预计，不改平台实际完成时间</td></tr><tr><td>清单图片保管</td><td>设置导出图片保留天数，留空长期保留</td></tr></table></div><p>顶部显示当前登录用户，优先显示“你的称呼”，未填写时用用户名；账号菜单可进入设置和退出。</p><p>忘记密码且无法登录时，当前没有面向公众的邮箱自助找回流程。由有权维护本机的人协助，通过对应部署环境的 Django 管理命令重设指定账号密码；不要重新初始化数据库。</p></section>
-
-<section id="maintenance"><span class="section-number">13 / 日常维护</span><h2>启停、备份、升级与迁到家用电脑</h2><h3>启动与停止</h3><p>从开始菜单选择“鱼管家”启动并打开页面，选择“停止鱼管家”安全停止后台。Windows 登录时会自动启动；无须先启动数据库或其他组件。</p><h3>升级</h3><p>先完成备份，再双击新版安装程序覆盖安装。安装器只更新程序文件，不主动删除 <code>%LOCALAPPDATA%\XianyuSeller</code> 中的经营数据，并会自动执行必要的数据结构升级。</p><h3>当前备份办法</h3><ol><li>暂停编辑并等待正在运行的同步完成。</li><li>从开始菜单选择“停止鱼管家”。</li><li>按 Win+R 打开 <code>%LOCALAPPDATA%</code>，把整个 <code>XianyuSeller</code> 文件夹复制到另一块磁盘。</li><li>重新打开鱼管家，并抽查订单、设置和历史数据。</li></ol><p class="warning">安装包的一键备份与恢复界面仍待补齐；在它通过恢复验收前，不把“复制了某个数据库文件”宣传成已验证备份。迁移或恢复应由维护人员在副本上验证后再切换。</p>
-<h3>迁移到家用电脑：验收顺序</h3><ol><li>记录原部署路径、版本和数据位置，完整备份数据库、私有文件和配置。</li><li>在新电脑安装相同版本，由对应恢复流程恢复；只复制 HTML 或源码不够。</li><li>确认历史订单数量和关键金额；从旧版升级且有历史视频时，抽查一次只读下载。</li><li>验证 API 店铺身份、执行一次只读同步，再启用自动同步。</li><li>确认新环境正常后，停用旧环境自动同步，避免两台电脑并行处理。</li><li>配置合适的开机启动、关闭自动睡眠，并实际重启验证恢复能力。</li></ol></section>
-
-<section id="troubleshooting"><span class="section-number">16 / 故障排查</span><h2>从现象找到下一步</h2><div class="table-wrap"><table><thead><tr><th>现象</th><th>按顺序检查</th><th>怎样确认恢复</th></tr></thead><tbody>
-<tr><td>8765 打不开</td><td>从开始菜单重新打开鱼管家 → 检查 8765 端口是否被占用 → 查看数据目录 logs</td><td>登录页或工作台可打开；不要只靠“进程存在”判断</td></tr>
-<tr><td>API 验证失败</td><td>是否修改了对应部署的正确配置文件 → 是否重启 → Key/Secret 是否匹配 → 应用和店铺授权是否有效</td><td>验证显示正确店铺，立即同步得到已知订单</td></tr>
-<tr><td>错误 100001</td><td>该错误不能单独锁定原因。结合提示检查应用权限、店铺授权、套餐，以及发货参数和默认寄件地址</td><td>相应动作真实成功；不要仅换一个地址反复试写</td></tr>
-<tr><td>同步任务迟迟不完成</td><td>重新打开鱼管家，查看最近运行记录与数据目录中的 worker / beat 日志</td><td>完整同步时间更新，记录完成</td></tr>
-<tr><td>订单比闲管家少</td><td>清除筛选 → 全部订单按号找 → 核对连接店铺 → 查看同步运行记录 → 对历史订单执行“同步并导入闲管家历史订单”</td><td>目标订单可找到，运行记录显示扫描及导入数量</td></tr>
-<tr><td>回款为零或日期不对</td><td>核对统计范围、平台完成时间、可信发货时间、退款状态与参考天数</td><td>合计能逐笔对到明细；不手改金额凑数</td></tr>
-<tr><td>利润少算</td><td>核对完成日期、成本、导入来源、非经营与待核对状态</td><td>纳入订单和排除原因都能解释</td></tr>
-<tr><td>图片没有显示</td><td>网络与图片缓存 → 订单来源是否有图片 → 平台是否实际返回图片</td><td>有来源图片的订单能显示；无来源时不会凭空补造</td></tr>
-<tr><td>文字清单内容不完整</td><td>订单商品、规格、数量、供应商和收货信息是否完整 → 是否重新同步后再次生成</td><td>复制或下载的 TXT 与当前订单内容一致</td></tr>
-<tr><td>上传失败</td><td>单文件是否超过 60MB、是否超过 10 个、磁盘是否有空间、网络和链接是否有效</td><td>出现已保存状态，店主可下载原视频</td></tr>
-</tbody></table></div>
-<h3>日志位置</h3><p>按 Win+R 打开 <code>%LOCALAPPDATA%\XianyuSeller\logs</code>。<code>web.err.log</code> 对应页面服务，<code>worker.err.log</code> 与 <code>beat.err.log</code> 对应后台同步。</p><p>反馈时描述发生时间、具体页面、操作步骤、错误提示和脱敏截图。不要公开密钥、配置文件或完整客户资料。可在<a href="https://github.com/huoyunpili/xiaomaipu/issues/new/choose" target="_blank" rel="noopener">个人项目 Issues</a>提交问题。</p></section>
-
-<section id="acceptance"><span class="section-number">15 / 首次验收</span><h2>配置完成后，逐项确认</h2><div class="checklist"><label><input type="checkbox">能创建并登录自己的店主账号。</label><label><input type="checkbox">API 连接的店铺身份正确。</label><label><input type="checkbox">同步一笔已知订单，订单号、商品、金额与状态一致。</label><label><input type="checkbox">补齐一笔成本，逐单利润公式能算对。</label><label><input type="checkbox">待发货选中正确订单和供货商，文字清单信息完整。</label><label><input type="checkbox">复制与下载的 TXT 都能正常打开，且不包含公网链接。</label><label><input type="checkbox">售后追回状态按实际收到款项登记，明白不会自动转账。</label><label><input type="checkbox">至少做过一次有效备份，并知道配置文件另存在哪里。</label></div><p class="muted">勾选仅用于当前阅读自查，不存入系统，刷新后重置。不为测试伪造真实发货或退款。</p></section>
-
-<section id="reference"><span class="section-number">16 / 维护人员附录</span><h2>技术参数、边界与来源</h2><div class="table-wrap"><table><tr><th>项目</th><th>当前值 / 作用</th></tr><tr><td>后台入口</td><td><code>127.0.0.1:8765</code>；只绑定本机</td></tr><tr><td>内置 PostgreSQL</td><td><code>127.0.0.1:55433</code>；由鱼管家自动管理，不对外开放</td></tr><tr><td>后台任务</td><td>本机文件队列；普通用户无需安装 Redis</td></tr><tr><td>数据目录</td><td><code>%LOCALAPPDATA%\XianyuSeller</code></td></tr><tr><td>API 网关</td><td><code>https://open.goofish.pro</code>；鱼管家自动处理请求签名，不用用户手算 MD5</td></tr><tr><td>供货商交付</td><td>只生成文字清单；不开放公网服务，不接收单号或视频</td></tr></table></div>
-<h3>忘记店主密码（维护人员）</h3><p>安装包暂未提供公众邮箱找回流程。由有权访问本机的维护人员使用安装目录中的内置 Python 与 Django 管理命令重设指定账号；不要删除数据库或重新安装来尝试清空密码。</p>
-<h3>当前没有提供的能力</h3><p>注册即用的线上托管平台、通用多店切换、供货商公网链接、单号或视频回传、自动向供货商追偿转账、完整财务净利润、任意格式 Excel 导入和源码方式一键生产恢复，都不应被理解为已具备。</p>
-<h3>外部资料（核查日期 2026-09-20）</h3><ol><li><a href="https://m.goofish.pro/app/operation.html" target="_blank" rel="noopener">闲管家官方操作手册</a>：注册、店铺授权及平台操作。</li><li><a href="https://apifox.com/apidoc/shared-3ac13d69-5a38-4536-ae9b-a54001854ef8" target="_blank" rel="noopener">闲管家开放平台接入说明</a>：应用 Key、Secret 与签名。</li><li><a href="https://file.goofish.pro/sop/erp/探网权益/探网权益对接流程.pdf" target="_blank" rel="noopener">闲管家官方应用接入图示</a>：用于辨认应用入口，不代表鱼管家购买该应用。</li></ol><p class="muted">外部套餐与权限如变动，以提供方当前界面为准。</p></section>
-<footer>鱼管家使用与配置手册 · 作者：阿栋 · Apache License 2.0 开源 · 独立项目，非闲鱼、鱼小铺、闲管家或阿奇索官方产品。</footer></main><div id="status" class="status" role="status" aria-live="polite"></div>
+<section id="history"><h2>从闲管家同步历史订单</h2><p><strong>入口：</strong>设置 → 闲管家 API → 同步并导入闲管家历史订单。鱼管家不再接收本地 CSV 或 Excel 订单文件，避免两套导入口径产生重复、状态不一致和字段缺失。</p><ol><li>先在闲管家完成历史订单导入，并确认订单号、金额、状态和时间正确。</li><li>回到鱼管家点击“同步并导入闲管家历史订单”。已有订单按店铺和订单号去重，不会重复创建。</li><li>稍后刷新同步页面，在运行记录中查看扫描数量、历史数量和已导入历史数量。</li><li>到“全部订单”按订单号抽查；缺成本、字段冲突或平台信息不足的订单会保留为待核对，不会猜造数据。</li></ol><p>闲管家订单列表接口按更新时间查询，当前只能扫描近 179 天并且单次最多 10000 条。较早订单只有在导入闲管家后产生了近期更新时间时才可能返回；数量过多时先在闲管家分批整理再重试。</p></section>
+<section id="settings"><h2>日常配置与账号管理</h2><div class="table-wrap"><table><tr><th>设置入口</th><th>用途与注意事项</th></tr><tr><td>闲管家 API</td><td>填写并保存 AppKey / AppSecret、验证 API 连接、同步当前及历史订单、查看自动同步状态和运行记录</td></tr><tr><td>商品与供应商</td><td>维护成本及默认供货商信息</td></tr><tr><td>我的账号</td><td>修改用户名、称呼和密码；修改用户名或密码需填写当前密码，新密码留空则不更改</td></tr><tr><td>本地店铺与备份</td><td>店铺资料与备份恢复说明；实际备份按部署方式执行</td></tr><tr><td>操作记录</td><td>回查成本更正、账号和售后相关记录</td></tr><tr><td>统一回款参考规则</td><td>修改发货后参考天数，默认 10，可填 1—365；修改后影响预计，不改平台实际完成时间</td></tr><tr><td>清单图片保管</td><td>设置导出图片保留天数，留空长期保留</td></tr></table></div><p>顶部显示当前登录用户，优先显示“你的称呼”，未填写时用用户名；账号菜单可进入设置和退出。</p><p>忘记密码且无法登录时，当前没有面向公众的邮箱自助找回流程。由有权维护本机的人协助，通过对应部署环境的 Django 管理命令重设指定账号密码；不要重新初始化数据库。</p></section>
+<section id="maintenance"><h2>退出、备份与升级</h2>
+<p><strong>关闭窗口：</strong>鱼管家仍在托盘运行并继续同步。需要完全停止时，右击托盘图标，选择“彻底退出”；下次启动后继续同步。</p>
+<h3>升级或换电脑前，先备份</h3>
+<ol><li>停止编辑，等待正在运行的同步完成，再从托盘彻底退出。</li><li>按 Win+R，输入 <code>%LOCALAPPDATA%</code>，将整个 <code>XianyuSeller</code> 文件夹复制到另一块磁盘。</li><li>重新打开鱼管家，或运行新版安装程序升级。</li></ol>
+<p>迁移与恢复请由维护人员协助验证，确认新电脑能读取订单与配置后再处理旧数据。保留原始备份。</p></section>
+<section id="help"><h2>遇到问题再看</h2>
+<details><summary>验证失败</summary><p>先检查两项凭据是否来自同一个应用、是否复制完整，再核对应用状态、目标店铺授权和订购有效期。更正后保存并验证。反馈时提供页面错误提示，隐藏密钥与客户信息。</p></details>
+<details><summary>连接成功，暂时没有订单</summary><p>等待首次同步完成，到“全部订单”清除筛选查看。需要接入前的历史订单时，先导入闲管家，再在鱼管家的 API 页面点击“同步并导入闲管家历史订单”。</p></details>
+<details><summary>关闭窗口、断网或更换 API</summary><p>关闭窗口后继续后台同步；彻底退出或关机后暂停，下次启动继续。断网后自动重试。更换 API 时重新保存并验证，成功后自动恢复同步。</p></details>
+<details><summary>旧版要求确认首次接入日期</summary><p>这是旧数据缺少可信接入日期的提示。按页面确认实际日期即可，不需要另外开启同步。</p></details>
+</section>
+<footer>鱼管家完整使用手册 · 作者：阿栋<br>闲管家截图版权归原权利人所有，仅用于说明接入步骤。鱼管家为独立项目，非闲鱼、鱼小铺、闲管家或阿奇索官方产品。</footer>
+</main>
+<dialog id="image-view"><button id="close-image" type="button">关闭放大图</button><div class="image-scroll"><img id="large-image" alt=""></div></dialog>
 <script>
+const viewer=document.getElementById('image-view'),large=document.getElementById('large-image');
+document.querySelectorAll('.zoom').forEach(button=>button.addEventListener('click',()=>{const img=button.querySelector('img');large.src=img.src;large.alt=img.alt;viewer.showModal();}));
+document.getElementById('close-image').addEventListener('click',()=>viewer.close());
 document.getElementById('print').addEventListener('click',()=>window.print());
-let timer;document.querySelectorAll('pre').forEach(pre=>{const b=document.createElement('button');b.type='button';b.textContent='复制';b.setAttribute('aria-label','复制本段命令或配置');pre.prepend(b);b.addEventListener('click',async()=>{let ok=false;const value=pre.querySelector('code').textContent;try{await navigator.clipboard.writeText(value);ok=true;}catch{const t=document.createElement('textarea');t.value=value;t.style.cssText='position:fixed;left:-9999px';document.body.append(t);t.select();ok=document.execCommand('copy');t.remove();b.focus();}document.getElementById('status').textContent=ok?'已复制，请核对路径与参数后使用':'请选中内容手动复制';clearTimeout(timer);timer=setTimeout(()=>document.getElementById('status').textContent='',3000);});});
+document.getElementById('copy-support').addEventListener('click',async()=>{const status=document.getElementById('copy-status');try{await navigator.clipboard.writeText(document.getElementById('support-message').textContent);status.textContent='已复制，可粘贴给闲管家客服。';}catch{status.textContent='请选中上方文字复制。';}});
 </script></body></html>

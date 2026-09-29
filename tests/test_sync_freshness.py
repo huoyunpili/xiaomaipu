@@ -23,6 +23,6 @@ def test_stopped_sync_warns_even_when_previous_run_has_no_error():
 
 def test_disabled_and_never_completed_sync_explain_missing_data():
     connection = Connection(enabled=False)
-    assert "自动同步已暂停" in connection.sync_warning
+    assert "自动同步尚未就绪" in connection.sync_warning
     connection.enabled = True
     assert "尚未成功同步" in connection.sync_warning

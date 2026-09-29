@@ -10,5 +10,5 @@
 <button type="button" data-save-recovery>确定</button><span data-recovery-feedback role="status" aria-live="polite"></span>
 </div>{% endif %}
 {% endif %}</div>
-<div class="wb-order-side"><span class="wb-badge {{ t.status }}">{{ t.get_status_display }}</span><strong>¥{{ t.paid_fen|money }}</strong><a href="{% url 'wb-detail' t.pk %}">查看 / 补充</a></div>
+<div class="wb-order-side"><span class="wb-badge {{ t.status }}">{{ t.get_status_display }}</span><strong>¥{{ t.paid_fen|money }}</strong>{% if t.status == 'REVIEW' %}<a href="{% url 'wb-review' t.pk %}">去核对</a>{% else %}<a href="{% url 'wb-detail' t.pk %}">查看 / 补充</a>{% endif %}</div>
 </article>
