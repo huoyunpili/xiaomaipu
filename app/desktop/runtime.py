@@ -39,7 +39,7 @@ def acquire_lock(data):
         handle.flush()
     handle.seek(0)
     try:
-        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)  # type: ignore[attr-defined]  # Windows API
     except OSError:
         handle.close()
         raise RuntimeError("Another desktop backend owns this data directory") from None
@@ -49,7 +49,7 @@ def acquire_lock(data):
 def own_windows_job():
     # Embedded Python does not process pywin32's post-install DLL relocation.
     dlls = Path(sys.executable).parent.parent / "site-packages/pywin32_system32"
-    dll_directory = os.add_dll_directory(str(dlls)) if dlls.is_dir() else None
+    dll_directory = os.add_dll_directory(str(dlls)) if dlls.is_dir() else None  # type: ignore[attr-defined]  # Windows API
     import win32api
     import win32job
 
@@ -97,7 +97,7 @@ def main():
     web_thread = None
     listener = None
     prepared = False
-    flags = subprocess.CREATE_NO_WINDOW
+    flags = subprocess.CREATE_NO_WINDOW  # type: ignore[attr-defined]  # Windows API
 
     def command(arguments, log_name, timeout=600):
         with (logs / log_name).open("ab") as log:
