@@ -8,7 +8,7 @@
 [Setup]
 AppId={{6B9201EF-7FA7-47CC-8E97-8ACB452F2A3F}
 AppName=鱼管家
-AppVersion=0.7.1
+AppVersion=0.7.2
 AppPublisher=阿栋
 AppPublisherURL=https://github.com/huoyunpili/xiaomaipu
 LicenseFile={#SourceRoot}\LICENSE
@@ -22,15 +22,16 @@ Compression=lzma2/fast
 SolidCompression=yes
 WizardStyle=modern
 OutputDir={#OutputDir}
-OutputBaseFilename=鱼管家-0.7.1-安装程序
+OutputBaseFilename=鱼管家-0.7.2-安装程序
 UninstallDisplayIcon={app}\FishManager.ico
 SetupLogging=yes
 CloseApplications=no
 RestartApplications=no
 
 [Files]
+Source: "{#SourceRoot}\prerequisites\vc_redist.x64.exe"; Flags: dontcopy
 Source: "{#SourceRoot}\scripts\windows_release.ps1"; DestName: "fish-manager-maintenance.ps1"; Flags: dontcopy
-Source: "{#SourceRoot}\*"; DestDir: "{app}"; Excludes: "__pycache__,*.pyc,requirements.txt"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#SourceRoot}\*"; DestDir: "{app}"; Excludes: "__pycache__,*.pyc,requirements.txt,prerequisites"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{userdesktop}\鱼管家"; Filename: "{app}\FishManager.exe"; WorkingDir: "{app}"; IconFilename: "{app}\FishManager.ico"; AppUserModelID: "cn.fishmanager.desktop"
@@ -43,12 +44,13 @@ Type: files; Name: "{group}\重新启动鱼管家.lnk"
 Type: files; Name: "{group}\配置闲管家 API.lnk"
 
 [Run]
-Filename: "{app}\FishManager.exe"; WorkingDir: "{app}"; Flags: nowait runasoriginaluser
+Filename: "{app}\FishManager.exe"; WorkingDir: "{app}"; Flags: nowait runasoriginaluser; Check: CanLaunchDesktop
 [UninstallRun]
 Filename: "{app}\FishManager.exe"; Parameters: "--quit"; WorkingDir: "{app}"; Flags: runhidden waituntilterminated; RunOnceId: "StopDesktop"
 Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\scripts\windows_release.ps1"" -Action Stop -AppRoot ""{app}"""; WorkingDir: "{app}"; Flags: runhidden waituntilterminated; RunOnceId: "StopFishManager"
 
 [Code]
+#include "vc-runtime.iss"
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
@@ -87,6 +89,7 @@ begin
     else if ResultCode <> 0 then
       Result := '旧版鱼管家未能安全停止，请重新启动电脑后再安装。';
   end;
+  if Result = '' then Result := EnsureVCRuntime;
 end;
 
 function InitializeUninstall(): Boolean;

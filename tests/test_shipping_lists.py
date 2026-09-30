@@ -44,7 +44,7 @@ def test_shipping_supplier_filter_is_optional(connection, admin_user, client, ch
         assert unassigned.supplier == ""
 
 
-@pytest.mark.parametrize("field,value", [("phone", ""), ("address", "***"), ("spec", "")])
+@pytest.mark.parametrize("field,value", [("phone", ""), ("address", "***"), ("title", "")])
 def test_unassigned_shipping_still_requires_complete_details(connection, admin_user, field, value):  # noqa: F811
     trade = make_trade(connection)
     setattr(trade, field, value)

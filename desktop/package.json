@@ -1,7 +1,7 @@
 {
   "name": "fish-manager-desktop",
   "productName": "鱼管家",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "鱼管家本地桌面应用",
   "main": "main.js",
   "private": true

@@ -69,8 +69,8 @@ def test_windows_installer_is_the_single_complete_user_path():
     )
     assert "'Install' {\n        Stop-All\n        Remove-ObsoleteTunnel" in runtime_script
     assert "LicenseFile={#SourceRoot}\\LICENSE" in installer
-    assert "AppVersion=0.7.1" in installer
-    assert "OutputBaseFilename=鱼管家-0.7.1-安装程序" in installer
+    assert "AppVersion=0.7.2" in installer
+    assert "OutputBaseFilename=鱼管家-0.7.2-安装程序" in installer
     assert 'Filename: "{app}\\FishManager.exe"' in installer
     assert "{userstartup}" in installer
     assert "{userdesktop}\\鱼管家" in installer
@@ -205,18 +205,14 @@ $dataRoot = $PSScriptRoot
 $pgData = Join-Path $dataRoot 'postgres'
 $pgBin = Join-Path $dataRoot 'bin'
 New-Item -ItemType Directory -Path $pgData,$pgBin | Out-Null
-# Model interruption after PG_VERSION was already written.
-function Join-Path($Path,$ChildPath) {{
-    if ($ChildPath -eq 'initdb.exe') {{ return 'Invoke-TestInitdb' }}
-    Microsoft.PowerShell.Management\\Join-Path $Path $ChildPath
-}}
+    # Model interruption after PG_VERSION was already written.
 function New-RandomHex {{ 'synthetic-only' }}
 $script:fail = $true
-function Invoke-TestInitdb {{
+    function Invoke-DatabaseInit {{
     $pending = Join-Path $dataRoot 'postgres-initializing'
     New-Item -ItemType Directory -Path $pending | Out-Null
     Set-Content -LiteralPath (Join-Path $pending 'PG_VERSION') -Value '17'
-    if ($script:fail) {{ $global:LASTEXITCODE = 1 }} else {{ $global:LASTEXITCODE = 0 }}
+        if ($script:fail) {{ throw 'Synthetic initialization failure' }}
 }}
 $env:POSTGRES_PASSWORD = 'synthetic-only'
 $env:POSTGRES_PORT = '55499'

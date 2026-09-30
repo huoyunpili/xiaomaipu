@@ -46,6 +46,12 @@ New-Item -ItemType Directory -Force -Path (Join-Path $stageRoot 'runtime/python'
 
 $cacheRoot = Join-Path $projectRoot '.local-release/downloads'
 New-Item -ItemType Directory -Force -Path $cacheRoot,$OutputDir | Out-Null
+$vcRuntime = Join-Path $cacheRoot 'vc_redist.x64.exe'
+Download-Checked 'https://download.visualstudio.microsoft.com/download/pr/ebdab8e5-1d7b-4d9f-a11b-cbb1720c3b12/843068991DAAA1F73AD9F6239BCE4D0F6A07A51F18C37EA2A867E9BECA71295C/VC_redist.x64.exe' $vcRuntime '843068991daaa1f73ad9f6239bce4d0f6a07a51f18c37ea2a867e9beca71295c'
+$vcSignature = Get-AuthenticodeSignature -LiteralPath $vcRuntime
+if ($vcSignature.Status -ne 'Valid' -or $vcSignature.SignerCertificate.Subject -notmatch '(^|, )O=Microsoft Corporation(,|$)') { throw 'The bundled VC++ prerequisite must have a valid Microsoft signature.' }
+New-Item -ItemType Directory -Force -Path (Join-Path $stageRoot 'prerequisites') | Out-Null
+Copy-Item -LiteralPath $vcRuntime -Destination (Join-Path $stageRoot 'prerequisites/vc_redist.x64.exe')
 if (-not $PostgresArchive) {
     $PostgresArchive = Join-Path $cacheRoot 'postgresql-17.11-windows-x64-binaries.zip'
     Download-Checked 'https://sbp.enterprisedb.com/getfile.jsp?fileid=1260569' $PostgresArchive $postgresSha256

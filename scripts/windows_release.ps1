@@ -20,7 +20,7 @@ $configFile = Join-Path $dataRoot 'config.env'
 $stateFile = Join-Path $dataRoot 'runtime.json'
 $logRoot = Join-Path $dataRoot 'logs'
 $launcherPath = Join-Path $appRootPath 'scripts\windows_release.ps1'
-$releaseVersion = '0.7.1'
+$releaseVersion = '0.7.2'
 
 function Write-Info([string]$Message) { Write-Host "[Fish Manager] $Message" }
 function New-RandomHex([int]$Bytes) {
@@ -108,6 +108,38 @@ function Resolve-WebAddress {
     }
     throw 'No available local web port was found.'
 }
+function Invoke-DatabaseInit([string]$Pending, [string]$PasswordFile) {
+    $process = New-Object Diagnostics.Process
+    $process.StartInfo.FileName = Join-Path $pgBin 'initdb.exe'
+    $process.StartInfo.Arguments = '--pgdata="' + $Pending + '" --username="' + $env:POSTGRES_USER + '" --pwfile="' + $PasswordFile + '" --auth=scram-sha-256 --encoding=UTF8 --locale=C'
+    $process.StartInfo.UseShellExecute = $false
+    $process.StartInfo.CreateNoWindow = $true
+    $process.StartInfo.RedirectStandardOutput = $true
+    $process.StartInfo.RedirectStandardError = $true
+    $resultLog = Join-Path $logRoot 'initdb-result.log'
+    [IO.File]::WriteAllText($resultLog, ('Started: ' + [DateTimeOffset]::Now.ToString('o') + "`r`n"))
+    try {
+        [void]$process.Start()
+        $stdout = $process.StandardOutput.ReadToEndAsync()
+        $stderr = $process.StandardError.ReadToEndAsync()
+        if (-not $process.WaitForExit(540000)) {
+            $process.Kill()
+            $process.WaitForExit()
+            throw 'Database initialization timed out; see initdb-result.log.'
+        }
+        [IO.File]::WriteAllText((Join-Path $logRoot 'initdb-out.log'), $stdout.Result)
+        [IO.File]::WriteAllText((Join-Path $logRoot 'initdb-error.log'), $stderr.Result)
+        $exitCode = $process.ExitCode
+        $hexCode = '0x' + [BitConverter]::ToUInt32([BitConverter]::GetBytes([int]$exitCode), 0).ToString('X8')
+        [IO.File]::AppendAllText($resultLog, "Exit code: $exitCode ($hexCode)`r`n")
+        if ($exitCode -ne 0) {
+            throw "The bundled database could not be initialized (exit $hexCode). See initdb-error.log and initdb-result.log."
+        }
+    } catch {
+        [IO.File]::AppendAllText($resultLog, ($_.Exception.Message + "`r`n"))
+        throw
+    } finally { $process.Dispose() }
+}
 function Initialize-Postgres {
     if (Test-Path -LiteralPath (Join-Path $pgData 'PG_VERSION')) { return }
     # Publish the cluster only after initdb succeeds. Closing the desktop during
@@ -119,8 +151,7 @@ function Initialize-Postgres {
     $passwordFile = Join-Path $dataRoot ('pg-password-' + (New-RandomHex 4) + '.tmp')
     try {
         [IO.File]::WriteAllText($passwordFile,$env:POSTGRES_PASSWORD,(New-Object Text.UTF8Encoding($false)))
-        & (Join-Path $pgBin 'initdb.exe') --pgdata=$pending --username=$env:POSTGRES_USER --pwfile=$passwordFile --auth=scram-sha-256 --encoding=UTF8 --locale=C
-        if ($LASTEXITCODE) { throw 'The bundled database could not be initialized.' }
+        Invoke-DatabaseInit $pending $passwordFile
         # A truncated port cache must never become invalid PostgreSQL syntax.
         $initialPort = Get-DatabasePort $env:POSTGRES_PORT
         [IO.File]::AppendAllText((Join-Path $pending 'postgresql.conf'), "`nlisten_addresses = '127.0.0.1'`nport = $initialPort`nmax_connections = 40`n", (New-Object Text.UTF8Encoding($false)))

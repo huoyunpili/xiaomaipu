@@ -255,7 +255,12 @@ def project(row, raw=None, *, include_history=False):
             trade.supplier_wechat = product.supplier_wechat
         if created or trade.status == "SHIPPING":
             trade.default_shipping_note = product.shipping_note
-    trade.title, trade.spec = goods.get("title", ""), goods.get("sku_text", "")
+    trade.title = goods.get("title", "")
+    # A missing platform SKU must not erase the seller's locally supplemented
+    # specification during the mandatory pre-export refresh.
+    platform_spec = goods.get("sku_text", "")
+    if platform_spec and platform_spec.strip():
+        trade.spec = platform_spec
     trade.paid_fen = data.get("pay_amount", 0)
     for field, key in (
         ("ordered_at", "order_time"),
@@ -479,11 +484,22 @@ def create_batches(trades, kind, actor):
         if kind == "shipping":
             if trade.status != "SHIPPING" or not trade.paid_at:
                 continue
-            if (
-                not all((trade.spec, trade.receiver, trade.phone, trade.address))
-                or "*" in trade.phone + trade.address
-            ):
-                raise BusinessError("请先补齐型号规格和完整收件信息，再导出。")
+            missing = [
+                label
+                for field, label in (
+                    ("title", "商品名称"),
+                    ("receiver", "收件人"),
+                    ("phone", "电话"),
+                    ("address", "完整地址"),
+                )
+                if not getattr(trade, field).strip()
+                or (field in ("phone", "address") and "*" in getattr(trade, field))
+            ]
+            if missing:
+                raise BusinessError(
+                    "请先补齐商品名称和完整收件信息，再导出。"
+                    f"订单 {trade.number} 需补充：{'、'.join(missing)}。"
+                )
         elif trade.status not in ("REFUNDING", "REFUNDED") or trade.recovered_at:
             continue
         if kind == "refund" and not trade.supplier:
