@@ -60,3 +60,7 @@ release-data/
 # One-off local source-editing helpers; not part of the application.
 /scripts/align_workspace.py
 /scripts/workspace_fixes.py
+
+# Public, reviewed technical documentation
+!/docs/technical/
+!/docs/technical/index.html

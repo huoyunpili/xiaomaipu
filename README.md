@@ -10,7 +10,7 @@
 
 当前公开桌面版为 **0.7.2**，采用 [Apache License 2.0](LICENSE) 开源。[下载最新 Windows 安装包](https://github.com/huoyunpili/xiaomaipu/releases/latest)（选择 Assets 中的“FishManager-0.7.2-Windows-Setup.exe”，无需下载 Source code）。已有旧版可按原目录覆盖安装，数据保留。欢迎小卖家试用、提出问题，也欢迎开发者参与设计、文档、测试和代码贡献。项目独立开发，并非闲鱼、鱼小铺、闲管家或阿奇索官方产品。
 
-[开始试用](#安装与开始使用) · [产品介绍](docs/product/index.html) · [使用手册](docs/manual/index.html) · [公开路线图](ROADMAP.md) · [参与贡献](CONTRIBUTING.md) · [提交问题](https://github.com/huoyunpili/xiaomaipu/issues/new/choose)
+[开始试用](#安装与开始使用) · [产品介绍](docs/product/index.html) · [使用手册](docs/manual/index.html) · [技术说明](docs/technical/index.html) · [公开路线图](ROADMAP.md) · [参与贡献](CONTRIBUTING.md) · [提交问题](https://github.com/huoyunpili/xiaomaipu/issues/new/choose)
 
 ## 产品介绍与使用手册
 
@@ -19,7 +19,9 @@
 | [鱼管家产品介绍](docs/product/index.html) | 初次了解、向其他卖家介绍 | 产品定位、主要功能、演示截图、订单流程与配置概览 |
 | [完整使用手册（含 API 图解）](docs/manual/index.html) | 安装接入、日常使用、遇到问题 | 一份手册涵盖 API 与套餐图解、订单、发货、核对、售后、利润及备份 |
 
-**如何阅读：** 点击文件链接后，在 GitHub 文件页点击 **Download raw file（下载原始文件）**，保存为 `.html`，再用 Edge / Chrome 打开。也可下载整个仓库 ZIP 后打开对应文件。
+**如何阅读：** 在[0.7.2 发布页](https://github.com/huoyunpili/xiaomaipu/releases/tag/v0.7.2)下载产品介绍（Product-Introduction）、使用手册（User-Manual）或技术说明（Technical-Guide）的 HTML 文件，双击即可离线阅读，图片已包含在内。仓库中的 HTML 是维护源文件，需要连同图片目录下载。
+
+[公版 0.7.2 技术说明](docs/technical/index.html)：架构、数据与成本口径、同步、安装修复和验证范围。三份文档更新于 2026-09-30。
 
 给用户发送生成的 `鱼管家使用与配置手册.html` 一份文件即可，API 图解与全部图片已包含在内，可离线阅读，不需要先启动鱼管家。手册支持目录导航及浏览器打印 / 另存为 PDF；外部下载和反馈链接需要联网。
 
@@ -47,7 +49,7 @@
 
 ### 3. 按供货商生成文字发货清单
 
-在待发货页勾选订单和供货商，支持多选，系统按供货商分别生成**可复制的文字清单和 TXT 文件**。商品、规格、数量与收货信息放在一起，方便沟通和填写快递单。
+在待发货页勾选订单，供货商筛选可选，支持多选，系统按供货商分别生成**可复制的文字清单和 TXT 文件**。商品、规格、数量与收货信息放在一起，方便沟通和填写快递单。
 
 ![待发货：商品图片、规格成色与供货商分组导出](docs/product/images/shipping-current.png)
 
@@ -60,7 +62,7 @@
 
 ```mermaid
 flowchart LR
-    A[店主选择订单和供货商] --> B[按供货商生成文字清单]
+    A[店主选择订单，供货商可选] --> B[按供货商生成文字清单]
     B --> C[复制发送或下载 TXT]
     C --> D[供货商按清单发货]
     D --> E[店主在闲管家或平台核对后续状态]

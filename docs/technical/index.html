@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>鱼管家 0.7.2 · 公版技术说明</title>
+<style>
+*{box-sizing:border-box}body{margin:0;color:#1f2329;background:#f6f7f9;font:16px/1.85 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif}main{max-width:1040px;margin:40px auto;background:white;padding:52px 64px;border:1px solid #e4e7ed;border-radius:12px}h1{font-size:36px;line-height:1.35}h2{font-size:25px;margin-top:46px;border-top:1px solid #e4e7ed;padding-top:30px}h3{font-size:19px}p,li{max-width:880px}a{color:#245bdb}code{font-size:.9em;overflow-wrap:anywhere;background:#f1f3f5;padding:2px 5px;border-radius:4px}.meta{color:#646a73}.tag{color:#245bdb;font-weight:600}.note{background:#f0f5ff;padding:18px 22px;border-left:3px solid #245bdb}.table{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}td,th{text-align:left;border-bottom:1px solid #e4e7ed;padding:12px;vertical-align:top}th{background:#f6f7f9}nav{display:flex;flex-wrap:wrap;gap:12px 22px;margin:24px 0}.flow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.flow div{border:1px solid #d7deea;border-radius:8px;padding:18px}.flow b{display:block;color:#245bdb}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f6f7f9;padding:20px;font:14px/1.8 Consolas,monospace}footer{margin-top:40px;color:#646a73;font-size:13px}@media(max-width:650px){main{margin:0;padding:28px 20px;border:0;border-radius:0}h1{font-size:29px}.flow{grid-template-columns:1fr}td,th{padding:9px}}@media print{body{background:white}main{margin:0;padding:0;border:0}nav{display:none}h2{break-after:avoid}tr,.flow{break-inside:avoid}}
+</style></head><body><main>
+<p class="tag">鱼管家 · 公版 0.7.2</p><h1>技术说明与维护指南</h1><p class="meta">更新：2026-09-30 · 面向开发者和本机维护人员<br>对应安装包代码：<code>3e5b9eba452beefe7f6b5c19dc2017caa814aabb</code></p>
+<p>鱼管家将平台订单事实、本地经营记录和逐单利润放在同一桌面工作台。本文说明已经交付的公版行为、关键数据约束及安装验证范围，可作为排查与后续开发的入口。</p>
+<nav><a href="#architecture">架构</a><a href="#data">数据与成本</a><a href="#sync">订单同步</a><a href="#shipping">发货清单</a><a href="#install">安装与修复</a><a href="#verification">验证范围</a><a href="#development">开发入口</a></nav>
+<p class="note">公开下载：<a href="https://github.com/huoyunpili/xiaomaipu/releases/latest">GitHub 最新版本</a>。0.7.2 的安装文件为 <code>FishManager-0.7.2-Windows-Setup.exe</code>。本说明不包含私版试验功能。</p>
+<h2 id="architecture">1. 本地桌面架构</h2>
+<div class="flow"><div><b>桌面窗口</b>Electron 展示本地界面，管理启动、托盘及退出。</div><div><b>业务服务</b>内置 Python / Django 处理订单、经营记录、导出和同步任务。</div><div><b>本地存储</b>内置 PostgreSQL 保存结构化数据；配置、附件及备份保存在本机。</div></div>
+<p>发行包内置 Python 3.13.7、PostgreSQL 17.11 和 Electron 44.4.5，无需用户自行安装开发工具或 Docker。内部 Web 与数据库端口由启动流程管理，不能将开发环境端口当作所有安装实例的固定端口。</p>
+<p>桌面关闭窗口后仍可在托盘后台运行；彻底退出后停止后台服务。当前标准安装按一个 Windows 用户的一套本地数据使用，尚未交付经过完整验收的双店铺同时运行流程。iOS 客户端、云端托管和跨设备同步不属于本版本。</p>
+<div class="table"><table><tr><th>入口</th><th>职责</th></tr><tr><td><code>desktop/main.js</code></td><td>桌面窗口、启动隔离、托盘与生命周期。</td></tr><tr><td><code>app/desktop/runtime.py</code></td><td>读取本地配置，分配服务端口，组织后台运行。</td></tr><tr><td><code>app/integrations/</code></td><td>保存平台订单事实、同步记录与接口接入。</td></tr><tr><td><code>app/workbench/</code></td><td>经营订单投影、成本快照、发货清单和利润统计。</td></tr><tr><td><code>app/accounts/</code>、<code>app/audit/</code></td><td>账号权限及经营操作审计。</td></tr></table></div>
+<h2 id="data">2. 数据位置与成本约束</h2>
+<p>标准安装的数据根目录为 <code>%LOCALAPPDATA%\XianyuSeller</code>，程序目录与经营数据分离。升级或卸载程序不会主动删除经营数据。配置、数据库、备份和历史私有附件需一起保管，不能仅复制程序目录来迁移店铺。</p>
+<p>平台订单事实与本地经营订单是不同层次。同步数量不等于经营工作台订单数量；判断是否遗漏时，应以店铺和订单号核对原始记录、投影结果、筛选条件与待核对状态。</p>
+<h3>默认商品成本与本单成本是两项数据</h3>
+<ul><li>金额以整数“分”存储。商品默认成本用于成本匹配，本单采用 <code>Trade.unit_cost_fen</code> 成本快照。</li><li>未知成本（空值）与明确的 0 元成本不同。0 元属于已知成本，不会自动被新的商品默认价覆盖。</li><li>调整商品默认成本不会改写已有非空订单成本快照。历史单成本错误，应通过订单详情填写更正后的单件成本及原因，保存并保留审计记录。</li><li>更正成功后输入框清空不表示数据丢失，应核对展示的本单成本、操作记录及统计明细。后续同步不会覆盖已有非空成本快照。</li></ul>
+<h3>利润统计口径</h3><pre>商品成本 = 数量 × 本单单件成本
+平台费参考 = 客户实付 × 1.6%（逐单四舍五入到分）
+订单利润 = 客户实付 − 商品成本 − 平台费
+演示：200.00 − 150.00 − 3.20 = 46.80 元</pre>
+<p>每日预计利润按付款日期，时间段实际利润按完成日期。缺成本订单单列，补齐后再纳入相应汇总；全额退款订单不收平台费。运费损失单列。1.6% 是当前程序参考口径，未提供通用费率编辑器，也不代表包含税费、人工、房租等全部经营费用。</p>
+<h2 id="sync">3. API 接入与订单同步</h2>
+<p>在设置内手动填写闲管家 AppKey / AppSecret，保存后验证连接。验证成功后触发同步，应用运行期间按约 5 分钟周期更新。后台完全退出、断网或授权失效都会影响同步，应查看运行记录而非仅依赖页面显示时间。</p>
+<p>历史订单先在闲管家准备，再使用“同步并导入闲管家历史订单”。当前列表扫描采用近 179 天更新时间窗口，单次最多 10000 条；更早下单的订单只有在近期更新等条件下才可能返回。按店铺和订单号去重，不通过猜造金额、状态或收货信息补齐未知事实。</p>
+<p>平台字段与人工补充需要区分：0.7.2 修复了平台空规格覆盖人工补充的问题。发现来源冲突时保留核对依据，不能以批量覆盖本地经营资料作为修复办法。</p>
+<h2 id="shipping">4. 公版发货清单</h2>
+<p>待发货页勾选订单即可导出，供货商筛选可选，未分配供货商也可导出。商品名称、数量与完整收货信息必须可用；平台未提供独立规格时不要求编造，脱敏电话或缺失地址仍不能作为完整发货资料。</p>
+<p>导出前重新同步核对，随后生成可复制文字与 TXT。公版不生成供货商远程回填链接，不接收新单号或视频，也不会因生成清单而提交平台发货。旧版已经保存的历史视频保留只读入口。</p>
+<h2 id="install">5. 安装、升级与数据库修复</h2>
+<ol><li>使用 64 位 Windows，选择英文程序路径，例如 <code>D:\FishManager</code>。</li><li>安装程序检查 Microsoft VC++ x64 运行库；缺失或版本不足时调用随包提供的微软运行库安装程序。涉及系统组件时可能出现 Windows 授权提示。</li><li>若运行库安装返回需要重启的状态，先重启 Windows 再启动鱼管家，不继续强行初始化数据库。</li><li>准备 PostgreSQL 配置和本地端口，按需初始化、备份、执行数据库迁移，再启动服务。</li></ol>
+<p>0.7.2 包含无效端口缓存回退，以及针对安装器所写已知数据库端口配置块的备份和修复。修复范围有限，不任意重写用户数据库配置。正常安装或覆盖升级不需要另跑独立修复工具，也不能保证解决所有外部系统故障。</p>
+<p>原生初始化失败时记录 <code>initdb-result.log</code>（含退出码）、<code>initdb-out.log</code> 与 <code>initdb-error.log</code>，失败的临时初始化目录不会当作可用数据库发布。启动失败页可打开诊断文件夹。提交日志前检查并遮去个人路径、客户资料和密钥。</p>
+<p>备份前先等待同步结束并从托盘彻底退出。普通用户可完整复制本地数据目录；数据库级维护使用与安装包匹配的 PostgreSQL 工具备份并校验。不要通过清空数据库、重建表或伪造迁移状态处理启动问题。</p>
+<h2 id="verification">6. 0.7.2 的验证证据与边界</h2>
+<div class="table"><table><tr><th>项目</th><th>结果</th></tr><tr><td>发布质量检查</td><td>322 项质量门禁测试和 2 项桌面测试通过，安装包对应代码的 GitHub CI 通过。</td></tr><tr><td>真实 EXE 安装</td><td>新安装、自动启动、演示账号界面访问通过。</td></tr><tr><td>损坏端口配置覆盖安装</td><td>自动修复后界面可访问，修复前备份存在，测试账号及数据库测试数据保留；未使用独立修复工具。</td></tr><tr><td>VC++ 运行库</td><td>本机已有运行库检测通过；缺失运行库的安装、失败和重启返回分支经过模拟。尚未在真正缺失运行库的干净虚拟机完成全流程验收。</td></tr><tr><td>卸载与签名</td><td>本次 0.7.2 未重新执行卸载验收。鱼管家 EXE 尚未代码签名；所附微软运行库的有效签名不代表鱼管家安装包已签名。</td></tr></table></div>
+<p>发布页提供 <code>Installer-Acceptance.json</code> 与 SHA-256 校验文件。验证结论只覆盖已执行场景，不承诺所有 Windows 环境都不会遇到启动问题。</p>
+<h2 id="development">7. 开发与发布入口</h2>
+<ul><li><code>scripts/windows_release.ps1</code>：数据库准备、备份、迁移和启动配置。</li><li><code>scripts/build_windows_installer.ps1</code>：固定依赖、质量门禁及 Windows 打包。</li><li><code>installer/fish-manager.iss</code>、<code>installer/vc-runtime.iss</code>：安装器与运行库前置检查。</li><li><code>scripts/build_product_page.py</code>、<code>scripts/build_manual.py</code>、<code>scripts/build_technical_guide.py</code>：构建可独立打开的文档。</li></ul>
+<p>按仓库 README 和贡献指南建立隔离开发环境，测试使用演示数据。配置文件、AppSecret、私有附件、数据库备份和真实订单日志不得加入公开仓库。数据库变更先备份，并验证升级与恢复路径；不得以真实店铺发货、退款或发送消息作为普通测试步骤。</p>
+<p><a href="https://github.com/huoyunpili/xiaomaipu">公开源码</a> · <a href="https://github.com/huoyunpili/xiaomaipu/blob/main/CONTRIBUTING.md">贡献指南</a> · <a href="https://github.com/huoyunpili/xiaomaipu/releases/tag/v0.7.2">0.7.2 发行与验收附件</a></p>
+<footer>作者：阿栋（huoyunpili） · Apache License 2.0<br>独立开发，非闲鱼、鱼小铺、闲管家或阿奇索官方产品。</footer>
+</main></body></html>
