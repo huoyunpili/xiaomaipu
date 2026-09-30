@@ -1,4 +1,4 @@
-﻿# 鱼管家 · 鱼小铺后台管理助手
+# 鱼管家 · 鱼小铺后台管理助手
 
 **作者：阿栋**（GitHub：[@huoyunpili](https://github.com/huoyunpili)）
 
@@ -8,7 +8,7 @@
 
 鱼管家是面向鱼小铺店主的后台管理助手，把这些日常问题放进一个工作台，面向经营闲鱼 / 鱼小铺的小卖家，尤其适合需要整理供货商发货清单、逐单核对成本和利润的店主。经营数据保存在你自己的电脑上。
 
-当前公开桌面版为 **0.7.2**，采用 [Apache License 2.0](LICENSE) 开源。[下载最新 Windows 安装包](https://github.com/huoyunpili/xiaomaipu/releases/latest)（选择 Assets 中的“鱼管家-0.7.2-安装程序.exe”，无需下载 Source code）。已有旧版可按原目录覆盖安装，数据保留。欢迎小卖家试用、提出问题，也欢迎开发者参与设计、文档、测试和代码贡献。项目独立开发，并非闲鱼、鱼小铺、闲管家或阿奇索官方产品。
+当前公开桌面版为 **0.7.2**，采用 [Apache License 2.0](LICENSE) 开源。[下载最新 Windows 安装包](https://github.com/huoyunpili/xiaomaipu/releases/latest)（选择 Assets 中的“FishManager-0.7.2-Windows-Setup.exe”，无需下载 Source code）。已有旧版可按原目录覆盖安装，数据保留。欢迎小卖家试用、提出问题，也欢迎开发者参与设计、文档、测试和代码贡献。项目独立开发，并非闲鱼、鱼小铺、闲管家或阿奇索官方产品。
 
 [开始试用](#安装与开始使用) · [产品介绍](docs/product/index.html) · [使用手册](docs/manual/index.html) · [公开路线图](ROADMAP.md) · [参与贡献](CONTRIBUTING.md) · [提交问题](https://github.com/huoyunpili/xiaomaipu/issues/new/choose)
 
@@ -98,7 +98,7 @@ flowchart LR
 
 ## 安装与开始使用
 
-普通用户只保留一种方式：从 [最新 Release](https://github.com/huoyunpili/xiaomaipu/releases/latest) 下载 **`鱼管家-0.7.2-安装程序.exe`**，双击安装。安装完成后会自动打开鱼管家，首次访问创建自己的店主账号，没有默认账号密码。
+普通用户只保留一种方式：从 [最新 Release](https://github.com/huoyunpili/xiaomaipu/releases/latest) 下载 **`FishManager-0.7.2-Windows-Setup.exe`**，双击安装。安装完成后会自动打开鱼管家，首次访问创建自己的店主账号，没有默认账号密码。
 
 安装包已经包含完整经营后台、Python 运行环境和 PostgreSQL 数据库。**不需要预先安装 Docker、Python、uv、Redis、PostgreSQL 或 cloudflared，也不需要下载源码、打开 PowerShell 或选择“基础版 / 完整版”。**
 
