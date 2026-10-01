@@ -11,9 +11,9 @@
 <div class="wb-facts">
 <a href="{% url 'wb-orders' %}?status=COMPLETED&amp;date_field=completed&amp;start={{ today_date }}&amp;end={{ today_date }}">今日已完成回款（订单金额） <b>¥{{ completed_today_amount|money }}</b><span>{{ completed_today_count }} 单 · 按确认收货日期</span></a>
 <a href="{% url 'wb-pending' %}?due=today">今日剩余预计回款 <b>¥{{ today_due|money }}</b><span>{{ today_due_count }} 单 · 尚未完成</span></a>
-<a href="{% url 'wb-pending' %}?due=soon">未来三天预计回款（{{ soon_start|date:"m月d日" }}—{{ soon_end|date:"m月d日" }}） <b>¥{{ soon_due|money }}</b></a>
+<a href="{% url 'wb-pending' %}?due=soon">未来 72 小时预计回款（{{ soon_start|date:"m月d日 H:i" }}—{{ soon_end|date:"m月d日 H:i" }}） <b>¥{{ soon_due|money }}</b></a>
 <a href="{% url 'wb-refunds' %}">退款处理中金额 <b>¥{{ risk|money }}</b></a>
-</div><p class="muted">今日合计＝今日已回款＋今日预计待回款。预计回款按发货后 {{ reference_days }} 天计算；未来三天从明天起算。</p>
+</div><p class="muted">今日合计＝今日已回款＋今日预计待回款。预计回款按发货后 {{ reference_days }} 天计算；未来 72 小时从当前时刻起算，包含今天尚未到预计时间的订单，与今日预计金额可能重叠，请勿相加。</p>
 {% if overdue %}<p class="wb-warning"><a href="{% url 'wb-pending' %}?due=overdue">{{ overdue|length }} 单 / ¥{{ overdue_amount|money }} 已过预计回款时间，但订单仍未完成</a>。发货已超过 {{ reference_days }} 天，请查看平台是否延长收货或尚未确认；这不代表平台资金逾期。</p>{% endif %}
 {% if unknown_due_count %}<p class="wb-warning"><a href="{% url 'wb-pending' %}?due=unknown">{{ unknown_due_count }} 单 / ¥{{ unknown_due_amount|money }} 缺少发货时间</a>，仍在待完成与担保金额中，暂不计入日期预测。</p>{% endif %}
 <p><a href="{% url 'wb-refunds' %}?refund_view=recovery">退货退款未追回货款：<strong>{% if recovery == None %}待补成本{% else %}¥{{ recovery|money }}{% endif %}</strong></a></p></div>

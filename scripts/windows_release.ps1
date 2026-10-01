@@ -20,7 +20,7 @@ $configFile = Join-Path $dataRoot 'config.env'
 $stateFile = Join-Path $dataRoot 'runtime.json'
 $logRoot = Join-Path $dataRoot 'logs'
 $launcherPath = Join-Path $appRootPath 'scripts\windows_release.ps1'
-$releaseVersion = '0.7.2'
+$releaseVersion = '0.7.3'
 
 function Write-Info([string]$Message) { Write-Host "[Fish Manager] $Message" }
 function New-RandomHex([int]$Bytes) {

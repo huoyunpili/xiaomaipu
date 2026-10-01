@@ -69,8 +69,8 @@ def test_windows_installer_is_the_single_complete_user_path():
     )
     assert "'Install' {\n        Stop-All\n        Remove-ObsoleteTunnel" in runtime_script
     assert "LicenseFile={#SourceRoot}\\LICENSE" in installer
-    assert "AppVersion=0.7.2" in installer
-    assert "OutputBaseFilename=鱼管家-0.7.2-安装程序" in installer
+    assert "AppVersion=0.7.3" in installer
+    assert "OutputBaseFilename=鱼管家-0.7.3-安装程序" in installer
     assert 'Filename: "{app}\\FishManager.exe"' in installer
     assert "{userstartup}" in installer
     assert "{userdesktop}\\鱼管家" in installer

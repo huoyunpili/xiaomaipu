@@ -39,8 +39,8 @@ def test_next_three_days_across_month_leap_day_and_year(connection, admin_user, 
         client.force_login(admin_user)
         dashboard = client.get(reverse("dashboard"))
         detail = client.get(reverse("wb-pending"), {"due": "soon"})
-    assert dashboard.context["soon_start"] == (now + timedelta(days=1)).date()
-    assert dashboard.context["soon_end"] == (now + timedelta(days=3)).date()
+    assert dashboard.context["soon_start"] == now
+    assert dashboard.context["soon_end"] == now + timedelta(hours=72)
     assert dashboard.context["soon_due"] == 60000
     assert {t.number for t in detail.context["rows"]} == {"77001", "77002", "77003"}
 
@@ -60,7 +60,7 @@ def test_repayment_boundaries_and_drilldown(connection, admin_user, client):
         trade.shipped_at = midnight - timedelta(days=10)
         trade.save()
     qs = Trade.objects.select_related("shop__workspacesettings")
-    expected = {"today": {1, 2, 3, 4}, "soon": {5, 6, 7, 8}, "overdue": {0, 1, 2}}
+    expected = {"today": {1, 2, 3, 4}, "soon": {3, 4, 5, 6, 7}, "overdue": {0, 1, 2}}
     client.force_login(admin_user)
     for period, indices in expected.items():
         numbers = {str(123450000 + i) for i in indices}
@@ -75,8 +75,44 @@ def test_repayment_boundaries_and_drilldown(connection, admin_user, client):
     with patch("app.workbench.views.timezone.now", return_value=now):
         dashboard = client.get("/")
     assert dashboard.context["today_due"] == 4 * 20000
-    assert dashboard.context["soon_due"] == 4 * 20000
+    assert dashboard.context["soon_due"] == 5 * 20000
     assert dashboard.context["overdue_amount"] == 3 * 20000
+
+
+def test_rolling_72_hours_exact_edges_and_export(connection, admin_user, client):
+    now = datetime(2026, 9, 30, 21, 15, 30, tzinfo=ZoneInfo("Asia/Shanghai"))
+    offsets = [
+        timedelta(microseconds=-1),
+        timedelta(0),
+        timedelta(hours=1),
+        timedelta(hours=72),
+        timedelta(hours=72, microseconds=1),
+    ]
+    for index, offset in enumerate(offsets):
+        trade = make_trade(connection, number=str(78000 + index))
+        trade.status = "PENDING"
+        trade.shipped_at = now + offset - timedelta(days=10)
+        trade.save()
+    for index, status in enumerate(["COMPLETED", "REFUNDING", "REFUNDED", "SHIPPING"]):
+        trade = make_trade(connection, number=str(79000 + index))
+        trade.status = status
+        trade.shipped_at = now - timedelta(days=10)
+        trade.save()
+    expected = {"78001", "78002", "78003"}
+    qs = Trade.objects.select_related("shop__workspacesettings")
+    assert {t.number for t in due_rows(qs, "soon", now)} == expected
+    assert set(filter_due(qs, "soon", 10, now).values_list("number", flat=True)) == expected
+    client.force_login(admin_user)
+    with patch("app.workbench.views.timezone.now", return_value=now):
+        dashboard = client.get(reverse("dashboard"))
+        detail = client.get(reverse("wb-pending"), {"due": "soon"})
+        exported = client.get(reverse("wb-pending"), {"due": "soon", "export": "csv"})
+    assert dashboard.context["soon_due"] == 60000
+    assert "未来 72 小时" in dashboard.content.decode()
+    assert {t.number for t in detail.context["rows"]} == expected
+    records = list(csv.reader(io.StringIO(exported.content.decode("utf-8-sig"))))
+    assert {row[0] for row in records[1:]} == expected
+    assert dashboard.context["overdue_amount"] == 20000
 
 
 def test_reference_setting_validation_and_preservation(connection, admin_user, client):

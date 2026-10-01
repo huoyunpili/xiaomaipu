@@ -8,7 +8,7 @@
 
 鱼管家是面向鱼小铺店主的后台管理助手，把这些日常问题放进一个工作台，面向经营闲鱼 / 鱼小铺的小卖家，尤其适合需要整理供货商发货清单、逐单核对成本和利润的店主。经营数据保存在你自己的电脑上。
 
-当前公开桌面版为 **0.7.2**，采用 [Apache License 2.0](LICENSE) 开源。[下载最新 Windows 安装包](https://github.com/huoyunpili/xiaomaipu/releases/latest)（选择 Assets 中的“FishManager-0.7.2-Windows-Setup.exe”，无需下载 Source code）。已有旧版可按原目录覆盖安装，数据保留。欢迎小卖家试用、提出问题，也欢迎开发者参与设计、文档、测试和代码贡献。项目独立开发，并非闲鱼、鱼小铺、闲管家或阿奇索官方产品。
+当前公开桌面版为 **0.7.3**，采用 [Apache License 2.0](LICENSE) 开源。[下载最新 Windows 安装包](https://github.com/huoyunpili/xiaomaipu/releases/latest)（选择 Assets 中的“FishManager-0.7.3-Windows-Setup.exe”，无需下载 Source code）。已有旧版可按原目录覆盖安装，数据保留。欢迎小卖家试用、提出问题，也欢迎开发者参与设计、文档、测试和代码贡献。项目独立开发，并非闲鱼、鱼小铺、闲管家或阿奇索官方产品。
 
 [开始试用](#安装与开始使用) · [产品介绍](docs/product/index.html) · [使用手册](docs/manual/index.html) · [技术说明](docs/technical/index.html) · [公开路线图](ROADMAP.md) · [参与贡献](CONTRIBUTING.md) · [提交问题](https://github.com/huoyunpili/xiaomaipu/issues/new/choose)
 
@@ -19,9 +19,9 @@
 | [鱼管家产品介绍](docs/product/index.html) | 初次了解、向其他卖家介绍 | 产品定位、主要功能、演示截图、订单流程与配置概览 |
 | [完整使用手册（含 API 图解）](docs/manual/index.html) | 安装接入、日常使用、遇到问题 | 一份手册涵盖 API 与套餐图解、订单、发货、核对、售后、利润及备份 |
 
-**如何阅读：** 在[0.7.2 发布页](https://github.com/huoyunpili/xiaomaipu/releases/tag/v0.7.2)下载产品介绍（Product-Introduction）、使用手册（User-Manual）或技术说明（Technical-Guide）的 HTML 文件，双击即可离线阅读，图片已包含在内。仓库中的 HTML 是维护源文件，需要连同图片目录下载。
+**如何阅读：** 在[0.7.3 发布页](https://github.com/huoyunpili/xiaomaipu/releases/tag/v0.7.3)下载产品介绍（Product-Introduction）、使用手册（User-Manual）或技术说明（Technical-Guide）的 HTML 文件，双击即可离线阅读，图片已包含在内。仓库中的 HTML 是维护源文件，需要连同图片目录下载。
 
-[公版 0.7.2 技术说明](docs/technical/index.html)：架构、数据与成本口径、同步、安装修复和验证范围。三份文档更新于 2026-09-30。
+[公版 0.7.3 技术说明](docs/technical/index.html)：架构、数据与成本口径、同步、安装修复和验证范围。三份文档更新于 2026-10-02。
 
 给用户发送生成的 `鱼管家使用与配置手册.html` 一份文件即可，API 图解与全部图片已包含在内，可离线阅读，不需要先启动鱼管家。手册支持目录导航及浏览器打印 / 另存为 PDF；外部下载和反馈链接需要联网。
 
@@ -42,7 +42,7 @@
 ### 2. 回款安排，看清今天与接下来几天
 
 - **今日合计**：今日已完成订单对应回款，加上今日预计待回款，避免重复计算。
-- **未来三天预计待回款**：从明天开始，展示接下来三天预计回款的未完成订单。
+- **未来 72 小时预计待回款**：从当前时刻起，展示 72 小时内预计回款的未完成订单。
 - **统一参考规则**：默认按发货后 10 天估算，可在设置中调整。
 
 金额可以进入明细核对。这里的“已回款”依据平台订单完成状态统计，预计回款用于安排周转；实际账户入账以平台账单为准。
@@ -96,11 +96,11 @@ flowchart LR
 
 ## 本次 GitHub 更新状态
 
-公版 **0.7.2** 已发布为 [最新版本](https://github.com/huoyunpili/xiaomaipu/releases/latest)。322 项自动化测试及 2 项桌面测试通过，已实际验证首次安装、启动、创建账号、损坏端口配置后的覆盖修复，以及账号和数据库测试记录保留。安装包包含微软签名的 Visual C++ x64 运行库，安装程序本身尚未数字签名。缺少运行库的安装结果分支已模拟验证，尚未在缺少运行库的全新 Windows 虚拟机上实测；详细验证范围见 Release 说明。
+公版 **0.7.3** 将预计回款范围改为从当前时刻起的 72 小时，保留发货后 10 天的默认规则。首页、明细和 CSV 使用相同范围，边界时间及跨月跨年均有回归测试。安装与升级、数据保留的实际验收结果见最新 Release 附件。安装程序本身尚未数字签名。
 
 ## 安装与开始使用
 
-普通用户只保留一种方式：从 [最新 Release](https://github.com/huoyunpili/xiaomaipu/releases/latest) 下载 **`FishManager-0.7.2-Windows-Setup.exe`**，双击安装。安装完成后会自动打开鱼管家，首次访问创建自己的店主账号，没有默认账号密码。
+普通用户只保留一种方式：从 [最新 Release](https://github.com/huoyunpili/xiaomaipu/releases/latest) 下载 **`FishManager-0.7.3-Windows-Setup.exe`**，双击安装。安装完成后会自动打开鱼管家，首次访问创建自己的店主账号，没有默认账号密码。
 
 安装包已经包含完整经营后台、Python 运行环境和 PostgreSQL 数据库。**不需要预先安装 Docker、Python、uv、Redis、PostgreSQL 或 cloudflared，也不需要下载源码、打开 PowerShell 或选择“基础版 / 完整版”。**
 
@@ -144,7 +144,7 @@ Apache License 2.0 不授予“鱼管家”名称、Logo 或其他品牌标识�
 
 仓库包含 [`fish-manager` Skill](skills/fish-manager/SKILL.md)，用于指导 Codex 安装诊断、排查闲管家同步、开发功能和执行安全发布检查。Skill 不会替代鱼管家应用，也不会在未经明确确认时执行真实发货、退款或其他外部业务操作。
 
-### Windows 启动修复（0.7.2）
+### Windows 启动修复（0.7.3）
 
 正常安装或升级只需要安装包，不需要另行运行修复工具。已有旧版时，先从托盘彻底退出鱼管家，再运行新版安装包并选择原安装目录覆盖安装；不必先卸载，也不要删除本机数据目录。
 

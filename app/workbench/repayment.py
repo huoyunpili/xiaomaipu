@@ -4,7 +4,7 @@ from django.utils import timezone
 
 PERIODS = {
     "today": "今日剩余预计回款",
-    "soon": "未来三天预计回款（从明天起）",
+    "soon": "未来 72 小时预计回款（从现在起）",
     "overdue": "预计回款时间已过，订单仍未完成",
     "unknown": "缺少发货时间，回款日期待核对",
 }
@@ -16,7 +16,7 @@ def due_bounds(period, now):
     if period == "today":
         return midnight, midnight + timedelta(days=1)
     if period == "soon":
-        return midnight + timedelta(days=1), midnight + timedelta(days=4)
+        return now, now + timedelta(hours=72)
     return None, now
 
 
@@ -32,7 +32,7 @@ def due_rows(rows, period, now):
         if row.reference_at
         and row.paid_at
         and (start is None or row.reference_at >= start)
-        and row.reference_at < end
+        and (row.reference_at <= end if period == "soon" else row.reference_at < end)
     ]
 
 
@@ -41,5 +41,6 @@ def filter_due(qs, period, days, now):
         return qs.filter(status="PENDING", paid_at__isnull=False, shipped_at__isnull=True)
     start, end = due_bounds(period, now)
     shift = timedelta(days=days)
-    qs = qs.filter(status="PENDING", paid_at__isnull=False, shipped_at__lt=end - shift)
+    upper_lookup = "shipped_at__lte" if period == "soon" else "shipped_at__lt"
+    qs = qs.filter(status="PENDING", paid_at__isnull=False, **{upper_lookup: end - shift})
     return qs.filter(shipped_at__gte=start - shift) if start else qs

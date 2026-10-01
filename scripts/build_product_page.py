@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 source = ROOT / "docs/product/index.html"
 page = source.read_text(encoding="utf-8")
-manual_url = "https://github.com/huoyunpili/xiaomaipu/releases/download/v0.7.2/FishManager-0.7.2-User-Manual.html"
+manual_url = "https://github.com/huoyunpili/xiaomaipu/releases/download/v0.7.3/FishManager-0.7.3-User-Manual.html"
 page = page.replace('href="../manual/index.html"', f'href="{manual_url}"')
 page = page.replace('href="../鱼管家使用与配置手册.html"', f'href="{manual_url}"')
 for path in sorted((ROOT / "docs/product/images").glob("*-current.png")):
